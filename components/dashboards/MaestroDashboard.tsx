@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { KpiCard } from '../KpiCard';
 import { LeadsByOriginChart } from '../LeadsByOriginChart';
 import { NetMarginChart } from '../NetMarginChart';
@@ -56,7 +56,11 @@ interface MaestroDashboardProps {
     tasks: Task[];
 }
 
+type DashboardTab = 'geral' | 'comercial' | 'operacional';
+
 export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks }) => {
+  const [activeTab, setActiveTab] = useState<DashboardTab>('geral');
+
   const kpiData = {
     netMargin: 42550.00,
     cac: 1250.00,
@@ -72,28 +76,88 @@ export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks }) => 
   - Origem dos Leads: Parceiros (40%), Google Ads (30%), Orgânico (20%), Outros (10%)
   - Tarefas Críticas Pendentes: 3
   `;
+  
+  const TabButton: React.FC<{tabId: DashboardTab, label: string}> = ({ tabId, label }) => (
+    <button
+        onClick={() => setActiveTab(tabId)}
+        className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+            activeTab === tabId 
+                ? 'bg-slate-800 text-white' 
+                : 'bg-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+        }`}
+    >
+        {label}
+    </button>
+  );
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard title="Margem Líquida (Mês)" value={`R$ ${kpiData.netMargin.toLocaleString('pt-BR')}`} change="+5.2%" />
-        <KpiCard title="Custo de Aquisição (CAC)" value={`R$ ${kpiData.cac.toLocaleString('pt-BR')}`} change="-1.8%" isNegative />
-        <KpiCard title="Lifetime Value (CLV)" value={`R$ ${kpiData.clv.toLocaleString('pt-BR')}`} change="+12%" />
-        <KpiCard title="Novos Leads (Mês)" value={kpiData.newLeads.toString()} change="+15%" />
+      <div className="border-b border-slate-700/50">
+          <div className="-mb-px flex space-x-2">
+              <TabButton tabId="geral" label="Visão Geral" />
+              <TabButton tabId="comercial" label="Comercial (CRM)" />
+              <TabButton tabId="operacional" label="Jurídico & Equipe" />
+          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <NetMarginChart />
+      {activeTab === 'geral' && (
+        <div className="space-y-6 md:space-y-8 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <KpiCard title="Margem Líquida (Mês)" value={`R$ ${kpiData.netMargin.toLocaleString('pt-BR')}`} change="+5.2%" />
+                <KpiCard title="Custo de Aquisição (CAC)" value={`R$ ${kpiData.cac.toLocaleString('pt-BR')}`} change="-1.8%" isNegative />
+                <KpiCard title="Lifetime Value (CLV)" value={`R$ ${kpiData.clv.toLocaleString('pt-BR')}`} change="+12%" />
+                <KpiCard title="Novos Leads (Mês)" value={kpiData.newLeads.toString()} change="+15%" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <NetMarginChart />
+                </div>
+                <GeminiInsightCard kpiData={kpiDataString} />
+            </div>
         </div>
-        <LeadsByOriginChart />
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TaskList tasks={tasks} />
-        <TeamPerformance />
-        <GeminiInsightCard kpiData={kpiDataString} />
-      </div>
+      {activeTab === 'comercial' && (
+        <div className="space-y-6 md:space-y-8 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                 <KpiCard title="Leads Ativos" value="85" change="+15%" />
+                 <KpiCard title="Taxa de Conversão" value="12%" change="+1.5%" />
+                 <KpiCard title="Valor em Negociação" value="R$ 182.500" change="+25%" />
+            </div>
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    {/* Placeholder for a more detailed commercial chart */}
+                    <Card className="h-full flex items-center justify-center">
+                        <p className="text-slate-400">Gráfico de Funil de Vendas (Em breve)</p>
+                    </Card>
+                </div>
+                <LeadsByOriginChart />
+            </div>
+        </div>
+      )}
+
+      {activeTab === 'operacional' && (
+        <div className="space-y-6 md:space-y-8 animate-fade-in">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                 <KpiCard title="Processos Ativos (Total)" value="152" change="+12" />
+                 <KpiCard title="Taxa de Sucesso (Geral)" value="91%" change="+1.5%" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TeamPerformance />
+                <TaskList tasks={tasks} />
+            </div>
+        </div>
+      )}
+
+      <style>{`
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
