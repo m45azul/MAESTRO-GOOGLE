@@ -1,190 +1,154 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '../components/Card';
-import { userMap } from '../data/users';
 import { useAuth } from '../context/AuthContext';
-import { Recado, Conversation, User } from '../types';
-import { PlusIcon } from '../components/icons';
-import { NewConversationModal } from '../components/NewConversationModal';
+import { MuralPost, Comment } from '../types';
+import { userMap } from '../data/users';
+import { ThumbsUpIcon, MessageCircleIcon } from '../components/icons';
 
-interface RecadosPageProps {
-  recados: Recado[];
-  setRecados: React.Dispatch<React.SetStateAction<Recado[]>>;
-  conversations: Conversation[];
-  setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
-  allUsers: User[];
+interface MuralPageProps {
+  posts: MuralPost[];
+  setPosts: React.Dispatch<React.SetStateAction<MuralPost[]>>;
 }
 
-export const RecadosPage: React.FC<RecadosPageProps> = ({ recados, setRecados, conversations, setConversations, allUsers }) => {
+const CommentSection: React.FC<{ post: MuralPost, onAddComment: (postId: string, content: string) => void }> = ({ post, onAddComment }) => {
+    const [newComment, setNewComment] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if(newComment.trim()) {
+            onAddComment(post.id, newComment);
+            setNewComment('');
+        }
+    };
+
+    return (
+        <div className="mt-4 pt-3 border-t border-slate-700/50">
+            {post.comments.map(comment => {
+                const author = userMap.get(comment.authorId);
+                return (
+                    <div key={comment.id} className="flex items-start space-x-2 mt-2">
+                        <img src={author?.avatarUrl} alt={author?.name} className="w-6 h-6 rounded-full"/>
+                        <div className="bg-slate-700/50 rounded-lg p-2 text-sm flex-1">
+                            <p className="font-semibold text-slate-200 text-xs">{author?.name}</p>
+                            <p className="text-slate-300">{comment.content}</p>
+                        </div>
+                    </div>
+                )
+            })}
+            <form onSubmit={handleSubmit} className="mt-3 flex space-x-2">
+                <input 
+                    type="text" 
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Escreva um comentário..."
+                    className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
+                />
+                <button type="submit" className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 text-sm">Comentar</button>
+            </form>
+        </div>
+    )
+}
+
+const PostCard: React.FC<{ post: MuralPost; onLike: (postId: string) => void; onAddComment: (postId: string, content: string) => void; currentUserId: string; }> = ({ post, onLike, onAddComment, currentUserId }) => {
+    const author = userMap.get(post.authorId);
+    const [showComments, setShowComments] = useState(false);
+    const hasLiked = post.likes.includes(currentUserId);
+
+    return (
+        <Card className="mb-4">
+            <div className="flex items-center">
+                <img src={author?.avatarUrl} alt={author?.name} className="w-10 h-10 rounded-full"/>
+                <div className="ml-3">
+                    <p className="font-semibold text-slate-100">{author?.name}</p>
+                    <p className="text-xs text-slate-400">{new Date(post.timestamp).toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+            <p className="mt-4 text-slate-300 whitespace-pre-wrap">{post.content}</p>
+            <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center space-x-4">
+                <button onClick={() => onLike(post.id)} className={`flex items-center text-sm transition-colors ${hasLiked ? 'text-indigo-400 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+                    <ThumbsUpIcon className="w-4 h-4 mr-1.5"/> 
+                    {post.likes.length} Curtir
+                </button>
+                <button onClick={() => setShowComments(!showComments)} className="flex items-center text-sm text-slate-400 hover:text-white transition-colors">
+                    <MessageCircleIcon className="w-4 h-4 mr-1.5"/>
+                    {post.comments.length} Comentários
+                </button>
+            </div>
+            {showComments && <CommentSection post={post} onAddComment={onAddComment} />}
+        </Card>
+    );
+};
+
+export const MuralPage: React.FC<MuralPageProps> = ({ posts, setPosts }) => {
     const { user } = useAuth();
-    const [selectedConversationId, setSelectedConversationId] = useState('user-adv-1');
-    const [message, setMessage] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
-    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+    const [newPostContent, setNewPostContent] = useState('');
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    const handleAddPost = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newPostContent.trim() || !user) return;
+        const newPost: MuralPost = {
+            id: `post-${Date.now()}`,
+            authorId: user.id,
+            content: newPostContent,
+            timestamp: new Date().toISOString(),
+            likes: [],
+            comments: []
+        };
+        setPosts(prev => [newPost, ...prev]);
+        setNewPostContent('');
+    };
 
-    const filteredConversations = useMemo(() => {
-        return conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [searchTerm, conversations]);
+    const handleLike = (postId: string) => {
+        if (!user) return;
+        setPosts(prevPosts => prevPosts.map(p => {
+            if (p.id === postId) {
+                const newLikes = p.likes.includes(user.id)
+                    ? p.likes.filter(uid => uid !== user.id)
+                    : [...p.likes, user.id];
+                return { ...p, likes: newLikes };
+            }
+            return p;
+        }));
+    };
 
-    const handleSelectConversation = (conversationId: string) => {
-        setSelectedConversationId(conversationId);
-        setConversations(prev => prev.map(c => 
-            c.id === conversationId ? { ...c, unread: 0 } : c
+    const handleAddComment = (postId: string, content: string) => {
+        if (!user) return;
+        const newComment: Comment = {
+            id: `comment-${Date.now()}`,
+            authorId: user.id,
+            content,
+            timestamp: new Date().toISOString()
+        };
+        setPosts(prevPosts => prevPosts.map(p => 
+            p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p
         ));
     };
 
-    const handleStartConversation = (targetUser: User) => {
-        if (!user) return;
-        
-        const existingConversation = conversations.find(c => c.id === targetUser.id && c.type === 'user');
-
-        if (existingConversation) {
-            handleSelectConversation(existingConversation.id);
-        } else {
-            const newConversation: Conversation = {
-                id: targetUser.id,
-                name: targetUser.name,
-                unread: 0,
-                type: 'user',
-            };
-            setConversations(prev => [newConversation, ...prev]);
-            setSelectedConversationId(newConversation.id);
-        }
-        setIsNewConversationModalOpen(false);
-    };
-
-    const selectedConversation = filteredConversations.find(c => c.id === selectedConversationId);
-
-    const conversationMessages = useMemo(() => {
-        if (!user || !selectedConversation) return [];
-        
-        return recados.filter(m => {
-            if (selectedConversation.type === 'group') {
-                return m.toId === selectedConversation.id;
-            }
-            return (m.fromId === selectedConversation.id && m.toId === user.id) || 
-                   (m.fromId === user.id && m.toId === selectedConversation.id);
-        }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    }, [recados, selectedConversationId, user, selectedConversation]);
-
-
-    useEffect(scrollToBottom, [conversationMessages]);
-    
-    const handleSendMessage = () => {
-        if (message.trim() === '' || !user) return;
-
-        const newMessage: Recado = {
-            id: `msg-${Date.now()}`,
-            fromId: user.id,
-            toId: selectedConversationId,
-            content: message,
-            timestamp: new Date().toISOString(),
-            read: false,
-        };
-
-        setRecados(prev => [...prev, newMessage]);
-        setMessage('');
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    }
-
-    if(!user) return null;
+    if (!user) return null;
 
     return (
-        <>
-            <div className="flex h-[calc(100vh-8rem)] gap-6">
-                <Card className="w-1/3 h-full flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-white">Conversas</h2>
-                         <button 
-                            onClick={() => setIsNewConversationModalOpen(true)} 
-                            className="p-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-                            title="Nova Conversa"
-                        >
-                            <PlusIcon className="w-5 h-5" />
+        <div className="max-w-3xl mx-auto">
+            <Card className="mb-6">
+                <form onSubmit={handleAddPost}>
+                    <textarea 
+                        value={newPostContent}
+                        onChange={(e) => setNewPostContent(e.target.value)}
+                        placeholder={`No que você está pensando, ${user.name}?`}
+                        className="w-full h-24 p-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    />
+                    <div className="flex justify-end mt-3">
+                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={!newPostContent.trim()}>
+                            Postar
                         </button>
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar conversa..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 mb-4 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                    />
-                    <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-                        {filteredConversations.map(conv => (
-                            <button
-                                key={conv.id}
-                                onClick={() => handleSelectConversation(conv.id)}
-                                className={`w-full text-left p-3 rounded-lg transition-colors ${selectedConversationId === conv.id ? 'bg-slate-700' : 'bg-slate-800/50 hover:bg-slate-700/50'}`}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <p className="font-semibold text-slate-200">{conv.name}</p>
-                                    {conv.unread > 0 && <span className="text-xs bg-indigo-600 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center">{conv.unread}</span>}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </Card>
-                <Card className="w-2/3 h-full flex flex-col">
-                    <div className="border-b border-slate-700/50 pb-3 mb-4">
-                        <h3 className="font-bold text-white">{selectedConversation?.name}</h3>
-                    </div>
-                    <div className="flex-1 space-y-4 overflow-y-auto pr-2">
-                        {conversationMessages.length > 0 ? conversationMessages.map(msg => {
-                            const sender = userMap.get(msg.fromId);
-                            const isMe = msg.fromId === user!.id;
-                            return (
-                                <div key={msg.id} className={`flex items-end gap-3 ${isMe ? 'justify-end' : ''}`}>
-                                    {!isMe && sender && <img src={sender.avatarUrl} alt={sender.name} className="w-8 h-8 rounded-full flex-shrink-0"/>}
-                                    <div className={`max-w-xs lg:max-w-md p-3 rounded-lg ${isMe ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-200'}`}>
-                                        {!isMe && sender && selectedConversation?.type === 'group' && <p className="text-xs font-bold mb-1 opacity-70">{sender.name}</p>}
-                                        <p className="text-sm">{msg.content}</p>
-                                        <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                                    </div>
-                                    {isMe && sender && <img src={sender.avatarUrl} alt={sender.name} className="w-8 h-8 rounded-full flex-shrink-0"/>}
-                                </div>
-                            )
-                        }) : (
-                            <div className="flex items-center justify-center h-full text-slate-500">
-                                <p>Nenhuma mensagem nesta conversa.</p>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-slate-700/50">
-                        <div className="flex items-center">
-                            <input 
-                                type="text" 
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Digite sua mensagem..."
-                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                            />
-                            <button onClick={handleSendMessage} className="ml-3 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={!message.trim()}>Enviar</button>
-                        </div>
-                    </div>
-                </Card>
+                </form>
+            </Card>
+
+            <div>
+                {posts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(post => (
+                    <PostCard key={post.id} post={post} onLike={handleLike} onAddComment={handleAddComment} currentUserId={user.id} />
+                ))}
             </div>
-            {isNewConversationModalOpen && (
-                <NewConversationModal
-                    isOpen={isNewConversationModalOpen}
-                    onClose={() => setIsNewConversationModalOpen(false)}
-                    onStartConversation={handleStartConversation}
-                    allUsers={allUsers}
-                    currentUser={user}
-                />
-            )}
-        </>
+        </div>
     );
 };

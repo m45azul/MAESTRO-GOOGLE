@@ -1,5 +1,5 @@
 import React from 'react';
-import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon, WorkflowIcon, MessageSquareIcon, AwardIcon } from './icons';
+import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon, WorkflowIcon, MessageSquareIcon, AwardIcon, ClipboardListIcon } from './icons';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
@@ -44,7 +44,8 @@ const ALL_ROLES: UserRole[] = ['MAESTRO', 'Sócio', 'Controller', 'Advogado Inte
 const NAV_ITEMS: NavItemConfig[] = [
     { path: '/', label: 'Dashboard', icon: DashboardIcon, roles: ALL_ROLES },
     { path: '/agenda', label: 'Agenda', icon: CalendarIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'SDR', 'Administrativo', 'Operador de Atendimento'] },
-    { path: '/recados', label: 'Recados', icon: MessageSquareIcon, roles: ALL_ROLES },
+    { path: '/mural', label: 'Mural', icon: ClipboardListIcon, roles: ALL_ROLES },
+    { path: '/chat', label: 'Chat', icon: MessageSquareIcon, roles: ALL_ROLES },
     { path: '/crm', label: 'CRM/Comercial', icon: CrmIcon, roles: ['MAESTRO', 'Controller', 'SDR', 'Parceiro SDR', 'Advogado Interno'], sectionBreak: true },
     { path: '/clientes', label: 'Clientes', icon: UsersIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'SDR', 'Parceiro SDR', 'Operador de Atendimento', 'Administrativo'] },
     { path: '/juridico', label: 'Jurídico', icon: LegalIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'Advogado Parceiro'] },

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -15,7 +16,8 @@ import { SocioPage } from './pages/SocioPage';
 import { EquipePage } from './pages/EquipePage';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
 import { WorkflowPage } from './pages/WorkflowPage';
-import { RecadosPage } from './pages/RecadosPage';
+import { MuralPage } from './pages/MuralPage';
+import { ChatPage } from './pages/ChatPage';
 import { BonusPage } from './pages/BonusPage';
 import { Chatbot } from './components/Chatbot';
 import { mockLeads } from './data/leads';
@@ -23,9 +25,11 @@ import { mockCases } from './data/cases';
 import { mockClients } from './data/clients';
 import { mockTransactions } from './data/transactions';
 import { mockAppointments } from './data/appointments';
-import { mockRecados, mockConversations } from './data/recados';
+import { mockMuralPosts } from './data/mural';
+import { mockChatMessages, mockChatConversations } from './data/chat';
 import { mockUsers } from './data/users';
-import type { Lead, LegalCase, Client, Transaction, Contract, Appointment, Recado, Conversation, User } from './types';
+import { mockTasks } from './data/tasks';
+import type { Lead, LegalCase, Client, Transaction, Contract, Appointment, MuralPost, ChatConversation, User, ChatMessage, Task } from './types';
 
 
 const DashboardLayout: React.FC = () => {
@@ -39,8 +43,10 @@ const DashboardLayout: React.FC = () => {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
     const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-    const [recados, setRecados] = useState<Recado[]>(mockRecados);
-    const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
+    const [tasks, setTasks] = useState<Task[]>(mockTasks);
+    const [muralPosts, setMuralPosts] = useState<MuralPost[]>(mockMuralPosts);
+    const [chatConversations, setChatConversations] = useState<ChatConversation[]>(mockChatConversations);
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
     const [users, setUsers] = useState<User[]>(mockUsers);
 
 
@@ -51,7 +57,7 @@ const DashboardLayout: React.FC = () => {
             case '/crm':
                 return <CrmPage leads={leads} setLeads={setLeads} setClients={setClients} setContracts={setContracts} setCases={setCases} allUsers={users} />;
             case '/agenda':
-                return <AgendaPage appointments={appointments} setAppointments={setAppointments} allUsers={users} />;
+                return <AgendaPage appointments={appointments} setAppointments={setAppointments} allUsers={users} tasks={tasks} />;
             case '/juridico':
                 return <LegalPage cases={cases} setCases={setCases} allUsers={users} />;
             case '/financeiro':
@@ -59,15 +65,17 @@ const DashboardLayout: React.FC = () => {
             case '/carteira':
                 return <CarteiraPage />;
             case '/clientes':
-                return <ClientsPage clients={clients} />;
+                return <ClientsPage clients={clients} setClients={setClients} cases={cases} />;
             case '/portal-cliente':
                 return <ClientPortalPage />;
             case '/societario':
                 return <SocioPage />;
             case '/equipe':
                 return <EquipePage users={users} setUsers={setUsers} />;
-            case '/recados':
-                return <RecadosPage recados={recados} setRecados={setRecados} conversations={conversations} setConversations={setConversations} allUsers={users} />;
+            case '/mural':
+                return <MuralPage posts={muralPosts} setPosts={setMuralPosts} />;
+            case '/chat':
+                return <ChatPage messages={chatMessages} setMessages={setChatMessages} conversations={chatConversations} setConversations={setChatConversations} allUsers={users} />;
             case '/bonus':
                 return <BonusPage />;
             case '/workflow':
@@ -91,7 +99,8 @@ const DashboardLayout: React.FC = () => {
             case '/portal-cliente': return 'Portal do Cliente';
             case '/societario': return 'Societário';
             case '/equipe': return 'Equipe';
-            case '/recados': return 'Recados';
+            case '/mural': return 'Mural';
+            case '/chat': return 'Chat Interno';
             case '/bonus': return 'Bônus e Prêmios';
             case '/workflow': return 'Workflow Engine';
             case '/configuracoes': return 'Configurações';

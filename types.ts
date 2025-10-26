@@ -155,6 +155,7 @@ export interface Client {
   phone: string;
   conversionDate: string;
   originLeadId: string;
+  isDeleted?: boolean;
 }
 
 export interface Contract {
@@ -196,16 +197,23 @@ export interface Workflow {
   nodes: WorkflowNode[];
 }
 
-export interface Recado {
+export interface Comment {
     id: string;
-    fromId: string;
-    toId: string; // can be user ID or group ID
+    authorId: string;
     content: string;
     timestamp: string;
-    read: boolean;
 }
 
-export interface Conversation {
+export interface MuralPost {
+    id: string;
+    authorId: string;
+    content: string;
+    timestamp: string;
+    likes: string[]; // array of user IDs
+    comments: Comment[];
+}
+
+export interface ChatConversation {
     id: string;
     name: string;
     unread: number;
@@ -222,8 +230,17 @@ export interface Meta {
     assigneeId: string; // user or team ID
 }
 
-export interface ChatMessage {
+export interface BotChatMessage {
     id: string;
     text: string;
     sender: 'user' | 'bot';
+}
+
+export interface ChatMessage {
+  id: string;
+  fromId: string;
+  toId: string; // Can be a userId or a groupId
+  content: string;
+  timestamp: string;
+  read: boolean;
 }

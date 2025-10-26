@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BotIcon, SendIcon, XIcon, SparklesIcon } from './icons';
 import { getChatbotResponse } from '../services/geminiService';
-import { ChatMessage } from '../types';
+import { BotChatMessage } from '../types';
 
 export const Chatbot: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<ChatMessage[]>([
+    const [messages, setMessages] = useState<BotChatMessage[]>([
         { id: '1', text: 'Olá! Eu sou a Maestro AI. Como posso ajudar você hoje?', sender: 'bot' }
     ]);
     const [inputValue, setInputValue] = useState('');
@@ -21,7 +21,7 @@ export const Chatbot: React.FC = () => {
     const handleSendMessage = async () => {
         if (inputValue.trim() === '') return;
 
-        const userMessage: ChatMessage = {
+        const userMessage: BotChatMessage = {
             id: `msg-${Date.now()}`,
             text: inputValue,
             sender: 'user',
@@ -32,7 +32,7 @@ export const Chatbot: React.FC = () => {
 
         try {
             const response = await getChatbotResponse(inputValue);
-            const botMessage: ChatMessage = {
+            const botMessage: BotChatMessage = {
                 id: `msg-${Date.now() + 1}`,
                 text: response,
                 sender: 'bot',
@@ -40,7 +40,7 @@ export const Chatbot: React.FC = () => {
             setMessages(prev => [...prev, botMessage]);
         } catch (error) {
             console.error(error);
-            const errorMessage: ChatMessage = {
+            const errorMessage: BotChatMessage = {
                 id: `msg-${Date.now() + 1}`,
                 text: 'Desculpe, ocorreu um erro ao me comunicar com a IA. Tente novamente.',
                 sender: 'bot',

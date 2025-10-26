@@ -1,44 +1,74 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Card } from '../components/Card';
-import { Client } from '../types';
+import { Client, LegalCase } from '../types';
+import { ClientList } from '../components/ClientList';
+import { ClientDetails } from '../components/ClientDetails';
+import { AddClientModal } from '../components/AddClientModal';
 
 interface ClientsPageProps {
     clients: Client[];
+    setClients: React.Dispatch<React.SetStateAction<Client[]>>;
+    cases: LegalCase[];
 }
 
-export const ClientsPage: React.FC<ClientsPageProps> = ({ clients }) => {
-  return (
-    <Card>
-      <h2 className="text-2xl font-bold text-white mb-6">Clientes</h2>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-400">
-          <thead className="text-xs text-slate-400 uppercase bg-slate-800">
-            <tr>
-              <th scope="col" className="px-6 py-3">Nome</th>
-              <th scope="col" className="px-6 py-3">CPF/CNPJ</th>
-              <th scope="col" className="px-6 py-3">Email</th>
-              <th scope="col" className="px-6 py-3">Telefone</th>
-              <th scope="col" className="px-6 py-3">Data de Conversão</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map(client => (
-              <tr key={client.id} className="border-b border-slate-700 hover:bg-slate-700/50">
-                <td className="px-6 py-4 font-medium text-slate-200">{client.name}</td>
-                <td className="px-6 py-4">{client.cpfCnpj}</td>
-                <td className="px-6 py-4">{client.email}</td>
-                <td className="px-6 py-4">{client.phone}</td>
-                <td className="px-6 py-4">{new Date(client.conversionDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
-              </tr>
-            ))}
-             {clients.length === 0 && (
-                <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-500">Nenhum cliente convertido ainda.</td>
-                </tr>
+export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, setClients, cases }) => {
+    const [selectedClientId, setSelectedClientId] = useState<string | null>(clients.length > 0 ? clients[0].id : null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    const activeClients = React.useMemo(() => clients.filter(c => !c.isDeleted), [clients]);
+    
+    const selectedClient = React.useMemo(() => {
+        return clients.find(c => c.id === selectedClientId);
+    }, [clients, selectedClientId]);
+
+    const handleSaveClient = (clientData: Client) => {
+        setClients(prev => prev.map(c => c.id === clientData.id ? clientData : c));
+        setIsEditModalOpen(false);
+    };
+
+    const handleDeactivateClient = (clientId: string) => {
+        if (window.confirm("Tem certeza que deseja desativar este cliente?")) {
+            setClients(prev => prev.map(c => c.id === clientId ? { ...c, isDeleted: true } : c));
+            if(selectedClientId === clientId) {
+                setSelectedClientId(activeClients.length > 1 ? activeClients.find(c => c.id !== clientId)?.id || null : null);
+            }
+        }
+    };
+    
+    const openEditModal = () => {
+        if(selectedClient) {
+            setIsEditModalOpen(true);
+        }
+    };
+
+    return (
+        <>
+            <div className="flex h-[calc(100vh-8rem)] gap-6">
+                <div className="w-1/3 h-full">
+                    <ClientList 
+                        clients={activeClients}
+                        selectedClientId={selectedClientId}
+                        onSelectClient={setSelectedClientId}
+                    />
+                </div>
+                <div className="w-2/3 h-full">
+                    <ClientDetails 
+                        client={selectedClient}
+                        cases={cases.filter(c => c.clientId === selectedClientId)}
+                        onEdit={openEditModal}
+                        onDeactivate={handleDeactivateClient}
+                    />
+                </div>
+            </div>
+            {isEditModalOpen && selectedClient && (
+                <AddClientModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSave={handleSaveClient}
+                    client={selectedClient}
+                />
             )}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
+        </>
+    );
 };
