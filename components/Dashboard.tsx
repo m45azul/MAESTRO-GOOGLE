@@ -1,5 +1,6 @@
+
 import React from 'react';
-import type { User } from '../types';
+import type { User, Task } from '../types';
 import { MaestroDashboard } from './dashboards/MaestroDashboard';
 import { SdrDashboard } from './dashboards/SdrDashboard';
 import { AdvogadoDashboard } from './dashboards/AdvogadoDashboard';
@@ -13,22 +14,23 @@ import { ParceiroDashboard } from './dashboards/ParceiroDashboard';
 
 interface DashboardProps {
     user: User;
+    tasks: Task[];
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, tasks }) => {
   switch(user.role) {
     case 'MAESTRO':
-      return <MaestroDashboard />;
+      return <MaestroDashboard tasks={tasks} />;
     case 'Sócio':
       return <SocioDashboard user={user} />;
     case 'Controller':
       return <ControllerDashboard />;
     case 'Advogado Interno':
-      return <AdvogadoDashboard user={user} />;
+      return <AdvogadoDashboard user={user} tasks={tasks} />;
     case 'Advogado Parceiro':
         return <AdvogadoParceiroDashboard user={user} />;
     case 'SDR':
-      return <SdrDashboard user={user} />;
+      return <SdrDashboard user={user} tasks={tasks} />;
     case 'Administrativo':
         return <AdminDashboard user={user} />;
     case 'Operador de Atendimento':
@@ -38,6 +40,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     case 'Parceiro Outros':
         return <ParceiroDashboard user={user} />;
     default:
-      return <MaestroDashboard />; // Default dashboard
+      return <MaestroDashboard tasks={tasks} />; // Default dashboard
   }
 };

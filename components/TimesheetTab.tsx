@@ -1,14 +1,22 @@
+
 import React, { useState } from 'react';
-import { LegalCase, TimeLog, User } from '../types';
+import type { LegalCase, TimeLog, User } from '../types';
 import { userMap } from '../data/users';
 
 interface TimesheetTabProps {
     caseData: LegalCase;
-    // FIX: Changed the type of 'timeLog' to Omit<TimeLog, 'id' | 'status'> to match the object being created and passed.
     onAddTimeLog: (caseId: string, timeLog: Omit<TimeLog, 'id' | 'status'>) => void;
-    // FIX: Added the onUpdateTimeLogStatus prop to align with the parent component (CaseDetails.tsx).
     onUpdateTimeLogStatus: (caseId: string, timeLogId: string, status: TimeLog['status']) => void;
     currentUser: User;
+}
+
+const StatusBadge: React.FC<{ status: TimeLog['status'] }> = ({ status }) => {
+    const styles = {
+        'Pendente': 'bg-amber-500/20 text-amber-400',
+        'Aprovado': 'bg-green-500/20 text-green-400',
+        'Rejeitado': 'bg-red-500/20 text-red-400',
+    };
+    return <span className={`text-xs font-bold px-2 py-1 rounded-full ${styles[status]}`}>{status}</span>
 }
 
 export const TimesheetTab: React.FC<TimesheetTabProps> = ({ caseData, onAddTimeLog, currentUser, onUpdateTimeLogStatus }) => {
@@ -43,6 +51,8 @@ export const TimesheetTab: React.FC<TimesheetTabProps> = ({ caseData, onAddTimeL
                                 <th className="px-4 py-2">Advogado</th>
                                 <th className="px-4 py-2">Descrição</th>
                                 <th className="px-4 py-2 text-right">Horas</th>
+                                <th className="px-4 py-2 text-center">Status</th>
+                                {currentUser.role === 'Controller' && <th className="px-4 py-2 text-right">Ações</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -52,6 +62,17 @@ export const TimesheetTab: React.FC<TimesheetTabProps> = ({ caseData, onAddTimeL
                                     <td className="px-4 py-3">{userMap.get(log.userId)?.name || 'N/A'}</td>
                                     <td className="px-4 py-3">{log.description}</td>
                                     <td className="px-4 py-3 text-right font-semibold">{log.hours.toFixed(2)}</td>
+                                    <td className="px-4 py-3 text-center"><StatusBadge status={log.status} /></td>
+                                    {currentUser.role === 'Controller' && (
+                                        <td className="px-4 py-3 text-right">
+                                            {log.status === 'Pendente' && (
+                                                <div className="flex items-center justify-end space-x-2">
+                                                    <button onClick={() => onUpdateTimeLogStatus(caseData.id, log.id, 'Aprovado')} className="text-xs px-2 py-1 bg-green-600/50 text-green-300 rounded hover:bg-green-600/80">Aprovar</button>
+                                                    <button onClick={() => onUpdateTimeLogStatus(caseData.id, log.id, 'Rejeitado')} className="text-xs px-2 py-1 bg-red-600/50 text-red-300 rounded hover:bg-red-600/80">Rejeitar</button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>

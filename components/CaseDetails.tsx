@@ -1,5 +1,5 @@
+
 import React, { useState, useEffect } from 'react';
-// FIX: Added User to the import to use it in CaseDetailsProps.
 import type { LegalCase, PredictiveAnalysis, TimeLog, User } from '../types';
 import { Card } from './Card';
 import { MoreVerticalIcon, EditIcon, TrashIcon, SparklesIcon, BrainCircuitIcon } from './icons';
@@ -18,9 +18,7 @@ interface CaseDetailsProps {
   onAddUpdate: (caseId: string, description: string) => void;
   onEdit: (caseData: LegalCase) => void;
   onArchive: (caseId: string) => void;
-  // FIX: Changed the type of onAddTimeLog to match the data passed from the child component. The parent component will handle adding the 'status'.
   onAddTimeLog: (caseId: string, timeLog: Omit<TimeLog, 'id' | 'status'>) => void;
-  // FIX: Added missing props to fix type errors in parent component (LegalPage.tsx).
   onUpdateTimeLogStatus: (caseId: string, timeLogId: string, status: TimeLog['status']) => void;
   onReassign: (caseId: string, newResponsibleId: string, reason: string) => void;
   allUsers: User[];
@@ -53,7 +51,6 @@ const PredictiveAnalysisCard: React.FC<{ analysis: PredictiveAnalysis }> = ({ an
 
 type ActiveTab = 'andamentos' | 'timesheet';
 
-// FIX: Added missing props to the component signature.
 export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate, onEdit, onArchive, onAddTimeLog, onUpdateTimeLogStatus, onReassign, allUsers }) => {
     const { user } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -182,7 +179,6 @@ export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate,
             {analysisError && !isAnalyzing && ( <div className="p-4 my-4 bg-red-900/30 rounded-lg border border-red-500/50 text-sm text-red-300"><p>{analysisError}</p></div> )}
 
             {activeTab === 'andamentos' && <CaseUpdatesTab caseData={caseData} onAddUpdate={onAddUpdate} />}
-            {/* FIX: Passed the onUpdateTimeLogStatus prop down to the TimesheetTab component. */}
             {activeTab === 'timesheet' && <TimesheetTab caseData={caseData} onAddTimeLog={onAddTimeLog} onUpdateTimeLogStatus={onUpdateTimeLogStatus} currentUser={user} />}
             
         </Card>

@@ -84,7 +84,7 @@ const DashboardLayout: React.FC = () => {
                 return <ConfiguracoesPage />;
             case '/':
             default:
-                return <Dashboard user={user} />;
+                return <Dashboard user={user} tasks={tasks} />;
         }
     };
     

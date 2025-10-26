@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { Card } from '../Card';
 import { KpiCard } from '../KpiCard';
 import { TaskList } from '../TaskList';
 import { mockCases } from '../../data/cases';
 import { clientMap } from '../../data/clients';
-import { User } from '../../types';
+import type { User, Task } from '../../types';
 
 interface AdvogadoDashboardProps {
     user: User;
+    tasks: Task[];
 }
 
-export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user }) => {
+export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user, tasks }) => {
     const myCases = mockCases.filter(c => c.responsibleId === user.id && c.status === 'Ativo');
     const totalValue = myCases.reduce((sum, c) => sum + c.valorCausa, 0);
 
@@ -33,7 +35,7 @@ export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user }) =>
                         ))}
                     </div>
                 </Card>
-                <TaskList />
+                <TaskList tasks={tasks} />
             </div>
         </div>
     );

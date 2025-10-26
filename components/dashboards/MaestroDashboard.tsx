@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { KpiCard } from '../KpiCard';
 import { LeadsByOriginChart } from '../LeadsByOriginChart';
@@ -6,6 +7,7 @@ import { TaskList } from '../TaskList';
 import { GeminiInsightCard } from '../GeminiInsightCard';
 import { Card } from '../Card';
 import { mockUsers } from '../../data/users';
+import type { Task } from '../../types';
 
 const getSuccessRateColor = (rate: number) => {
     if (rate >= 90) return 'text-green-400';
@@ -50,7 +52,11 @@ const TeamPerformance: React.FC = () => {
     );
 };
 
-export const MaestroDashboard: React.FC = () => {
+interface MaestroDashboardProps {
+    tasks: Task[];
+}
+
+export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks }) => {
   const kpiData = {
     netMargin: 42550.00,
     cac: 1250.00,
@@ -84,7 +90,7 @@ export const MaestroDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TaskList />
+        <TaskList tasks={tasks} />
         <TeamPerformance />
         <GeminiInsightCard kpiData={kpiDataString} />
       </div>

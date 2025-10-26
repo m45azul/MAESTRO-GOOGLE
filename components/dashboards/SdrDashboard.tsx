@@ -1,15 +1,17 @@
+
 import React from 'react';
 import { Card } from '../Card';
 import { KpiCard } from '../KpiCard';
 import { TaskList } from '../TaskList';
 import { mockLeads } from '../../data/leads';
-import { User } from '../../types';
+import type { User, Task } from '../../types';
 
 interface SdrDashboardProps {
     user: User;
+    tasks: Task[];
 }
 
-export const SdrDashboard: React.FC<SdrDashboardProps> = ({ user }) => {
+export const SdrDashboard: React.FC<SdrDashboardProps> = ({ user, tasks }) => {
     const myLeads = mockLeads.filter(l => l.responsibleId === user.id && !l.isDeleted);
     
     const leadsInNegotiation = myLeads.filter(l => l.stage === 'Proposta' || l.stage === 'Negociação');
@@ -41,7 +43,7 @@ export const SdrDashboard: React.FC<SdrDashboardProps> = ({ user }) => {
                         })}
                     </div>
                 </Card>
-                <TaskList />
+                <TaskList tasks={tasks} />
             </div>
         </div>
     );

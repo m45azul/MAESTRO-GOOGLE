@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { LegalCase, User, Client } from '../types';
 
@@ -58,7 +59,6 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
         alert("Por favor, selecione um cliente e um advogado responsável.");
         return;
     }
-    // FIX: The 'timesheet' property was missing, causing a type error. It's now included.
     onSaveCase({
         id: caseData?.id,
         title,
