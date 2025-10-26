@@ -12,11 +12,14 @@ interface AddCaseModalProps {
 
 export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSaveCase, lawyers, clients, caseData }) => {
     const [title, setTitle] = useState('');
-    const [caseNumber, setCaseNumber] = useState('');
+    const [processNumber, setProcessNumber] = useState('');
     const [clientId, setClientId] = useState('');
     const [responsibleId, setResponsibleId] = useState('');
+    const [opposingParty, setOpposingParty] = useState('');
+    const [court, setCourt] = useState('');
+    const [valorCausa, setValorCausa] = useState('');
+    
     // Mock values from LegalCase that are not in the form
-    const [valorCausa, setValorCausa] = useState(0);
     const [honorariosPrevistos, setHonorariosPrevistos] = useState(0);
     const [percentualAdvogado, setPercentualAdvogado] = useState(30);
     const [tags, setTags] = useState<string[]>([]);
@@ -26,19 +29,23 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
     useEffect(() => {
         if (isOpen && caseData) {
             setTitle(caseData.title);
-            setCaseNumber(caseData.caseNumber);
+            setProcessNumber(caseData.processNumber);
             setClientId(caseData.clientId);
             setResponsibleId(caseData.responsibleId);
-            setValorCausa(caseData.valorCausa);
+            setOpposingParty(caseData.opposingParty);
+            setCourt(caseData.court);
+            setValorCausa(String(caseData.valorCausa));
             setHonorariosPrevistos(caseData.honorariosPrevistos);
             setPercentualAdvogado(caseData.percentualAdvogado);
             setTags(caseData.tags);
         } else {
             setTitle('');
-            setCaseNumber('');
+            setProcessNumber('');
             setClientId('');
             setResponsibleId('');
-            setValorCausa(0);
+            setOpposingParty('');
+            setCourt('');
+            setValorCausa('');
             setHonorariosPrevistos(0);
             setPercentualAdvogado(30);
             setTags([]);
@@ -51,16 +58,20 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
         alert("Por favor, selecione um cliente e um advogado responsável.");
         return;
     }
+    // FIX: The 'timesheet' property was missing, causing a type error. It's now included.
     onSaveCase({
         id: caseData?.id,
         title,
-        caseNumber,
+        processNumber,
         clientId,
         responsibleId,
+        opposingParty,
+        court,
+        valorCausa: parseFloat(valorCausa) || 0,
         tags,
-        valorCausa,
         honorariosPrevistos,
         percentualAdvogado,
+        timesheet: caseData?.timesheet || [],
     });
     onClose();
   };
@@ -68,8 +79,8 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-lg border border-slate-700">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+      <div className="bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-white mb-6">{isEditing ? 'Editar Processo' : 'Adicionar Novo Processo'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -79,16 +90,30 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="caseNumber" className="block text-sm font-medium text-slate-300">Número do Processo</label>
-                <input type="text" id="caseNumber" value={caseNumber} onChange={e => setCaseNumber(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+                <label htmlFor="processNumber" className="block text-sm font-medium text-slate-300">Número do Processo</label>
+                <input type="text" id="processNumber" value={processNumber} onChange={e => setProcessNumber(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>
               <div>
-                <label htmlFor="client" className="block text-sm font-medium text-slate-300">Cliente</label>
-                <select id="client" value={clientId} onChange={e => setClientId(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                  <option value="" disabled>Selecione um cliente</option>
-                  {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-                </select>
+                <label htmlFor="valorCausa" className="block text-sm font-medium text-slate-300">Valor da Causa (R$)</label>
+                <input type="number" id="valorCausa" value={valorCausa} onChange={e => setValorCausa(e.target.value)} step="0.01" className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="client" className="block text-sm font-medium text-slate-300">Cliente</label>
+                    <select id="client" value={clientId} onChange={e => setClientId(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <option value="" disabled>Selecione um cliente</option>
+                    {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="opposingParty" className="block text-sm font-medium text-slate-300">Parte Contrária</label>
+                    <input type="text" id="opposingParty" value={opposingParty} onChange={e => setOpposingParty(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+                </div>
+            </div>
+             <div>
+                <label htmlFor="court" className="block text-sm font-medium text-slate-300">Tribunal / Vara</label>
+                <input type="text" id="court" value={court} onChange={e => setCourt(e.target.value)} required className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
             </div>
             <div>
               <label htmlFor="responsible" className="block text-sm font-medium text-slate-300">Advogado Responsável</label>

@@ -1,18 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import type { LegalCase } from '../types';
+import type { LegalCase, TimeLog, User } from '../types';
 import { CaseList } from '../components/CaseList';
 import { CaseDetails } from '../components/CaseDetails';
 import { useAuth } from '../context/AuthContext';
-import { mockUsers } from '../data/users';
 import { mockClients } from '../data/clients';
 import { AddCaseModal } from '../components/AddCaseModal';
 
 interface LegalPageProps {
     cases: LegalCase[];
     setCases: React.Dispatch<React.SetStateAction<LegalCase[]>>;
+    allUsers: User[];
 }
 
-export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
+export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases, allUsers }) => {
     const { user } = useAuth();
     const [selectedCaseId, setSelectedCaseId] = useState<string | null>(cases.find(c => !c.isDeleted)?.id || null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +26,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
             const clientName = mockClients.find(client => client.id === c.clientId)?.name || '';
             return searchTerm === '' ||
                 c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                c.caseNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.processNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 clientName.toLowerCase().includes(searchTerm.toLowerCase());
         });
     }, [activeCases, searchTerm]);
@@ -50,7 +50,52 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
             return c;
         }));
     };
+
+    const handleAddTimeLog = (caseId: string, timeLogData: Omit<TimeLog, 'id' | 'status'>) => {
+        setCases(prevCases => prevCases.map(c => {
+            if (c.id === caseId) {
+                const newTimeLog: TimeLog = {
+                    ...timeLogData,
+                    id: `tl-${caseId}-${c.timesheet.length + 1}`,
+                    status: 'Pendente',
+                };
+                return { ...c, timesheet: [...c.timesheet, newTimeLog] };
+            }
+            return c;
+        }));
+    };
     
+    const handleUpdateTimeLogStatus = (caseId: string, timeLogId: string, status: TimeLog['status']) => {
+        setCases(prevCases => prevCases.map(c => {
+            if (c.id === caseId) {
+                return { 
+                    ...c, 
+                    timesheet: c.timesheet.map(tl => tl.id === timeLogId ? {...tl, status} : tl)
+                };
+            }
+            return c;
+        }));
+    };
+    
+    const handleReassignCase = (caseId: string, newResponsibleId: string, reason: string) => {
+      if(!user) return;
+      setCases(prevCases => prevCases.map(c => {
+        if (c.id === caseId) {
+          const newResponsible = allUsers.find(u => u.id === newResponsibleId);
+          const oldResponsible = allUsers.find(u => u.id === c.responsibleId);
+          const updateDescription = `Processo reatribuído de ${oldResponsible?.name || 'N/A'} para ${newResponsible?.name || 'N/A'}. Motivo: ${reason}`;
+          const newUpdate = {
+              id: `u${caseId}-${c.updates.length + 1}`,
+              date: new Date().toISOString().split('T')[0],
+              author: user.name,
+              description: updateDescription,
+          };
+          return { ...c, responsibleId: newResponsibleId, updates: [...c.updates, newUpdate] };
+        }
+        return c;
+      }));
+    };
+
     const handleSaveCase = (caseData: Omit<LegalCase, 'id' | 'status' | 'updates'> & { id?: string }) => {
         if(editingCase) { // Update
             setCases(prev => prev.map(c => c.id === editingCase.id ? { ...c, ...caseData } : c));
@@ -71,7 +116,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
 
     const handleArchiveCase = (caseId: string) => {
         if(window.confirm("Tem certeza que deseja arquivar este processo?")) {
-            setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'Arquivado', isDeleted: true } : c));
+            setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'Arquivado' } : c));
             if (selectedCaseId === caseId) {
                 setSelectedCaseId(activeCases.length > 1 ? activeCases.find(c => c.id !== caseId)?.id || null : null);
             }
@@ -88,7 +133,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
         setIsModalOpen(true);
     };
     
-    const lawyers = useMemo(() => mockUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller'), []);
+    const lawyers = useMemo(() => allUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller' || u.role === 'Advogado Parceiro'), [allUsers]);
 
     return (
         <>
@@ -109,6 +154,10 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases }) => {
                         onAddUpdate={handleAddUpdate}
                         onEdit={openEditModal}
                         onArchive={handleArchiveCase}
+                        onAddTimeLog={handleAddTimeLog}
+                        onUpdateTimeLogStatus={handleUpdateTimeLogStatus}
+                        onReassign={handleReassignCase}
+                        allUsers={allUsers}
                     />
                 </div>
             </div>

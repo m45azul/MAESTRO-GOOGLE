@@ -15,7 +15,9 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients }) => {
           <thead className="text-xs text-slate-400 uppercase bg-slate-800">
             <tr>
               <th scope="col" className="px-6 py-3">Nome</th>
+              <th scope="col" className="px-6 py-3">CPF/CNPJ</th>
               <th scope="col" className="px-6 py-3">Email</th>
+              <th scope="col" className="px-6 py-3">Telefone</th>
               <th scope="col" className="px-6 py-3">Data de Conversão</th>
             </tr>
           </thead>
@@ -23,13 +25,15 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients }) => {
             {clients.map(client => (
               <tr key={client.id} className="border-b border-slate-700 hover:bg-slate-700/50">
                 <td className="px-6 py-4 font-medium text-slate-200">{client.name}</td>
+                <td className="px-6 py-4">{client.cpfCnpj}</td>
                 <td className="px-6 py-4">{client.email}</td>
+                <td className="px-6 py-4">{client.phone}</td>
                 <td className="px-6 py-4">{new Date(client.conversionDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
               </tr>
             ))}
              {clients.length === 0 && (
                 <tr>
-                    <td colSpan={3} className="text-center py-8 text-slate-500">Nenhum cliente convertido ainda.</td>
+                    <td colSpan={5} className="text-center py-8 text-slate-500">Nenhum cliente convertido ainda.</td>
                 </tr>
             )}
           </tbody>

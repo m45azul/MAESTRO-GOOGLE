@@ -26,6 +26,12 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl: string;
+  oabNumber?: string;
+  cpf?: string;
+  phone?: string;
+  funcaoComercialHabilitada?: boolean;
+  status?: 'Ativo' | 'Inativo';
+  valorHora?: number;
 }
 
 export interface LawyerPerformance {
@@ -41,10 +47,14 @@ export type PipelineStage = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 
 export interface Lead {
   id: string;
   name: string;
+  email: string;
+  phone: string;
   company: string;
   value: number;
   stage: PipelineStage;
   responsibleId: string | null;
+  origin: string;
+  description: string;
   tags: string[];
   isDeleted?: boolean;
 }
@@ -55,6 +65,8 @@ export interface Appointment {
   time: string; // HH:mm
   title: string;
   type: 'Reunião' | 'Audiência' | 'Prazo Processual' | 'Follow-up';
+  participantIds: string[];
+  description?: string;
 }
 
 export interface CaseUpdate {
@@ -64,15 +76,29 @@ export interface CaseUpdate {
   description: string;
 }
 
+export interface TimeLog {
+  id: string;
+  date: string;
+  hours: number;
+  description: string;
+  userId: string;
+  status: 'Pendente' | 'Aprovado' | 'Rejeitado';
+}
+
 export interface LegalCase {
   id: string;
-  caseNumber: string;
+  processNumber: string;
+  internalNumber?: string;
   title: string;
   clientId: string;
   contractId?: string;
   status: 'Ativo' | 'Suspenso' | 'Arquivado';
   responsibleId: string;
+  controllerId?: string;
+  opposingParty: string;
+  court: string;
   updates: CaseUpdate[];
+  timesheet: TimeLog[];
   tags: string[];
   valorCausa: number;
   honorariosPrevistos: number;
@@ -92,6 +118,7 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   reconciled: boolean;
+  centroCusto?: string;
   isDeleted?: boolean;
 }
 
@@ -122,7 +149,10 @@ export interface Carteira {
 export interface Client {
   id: string;
   name: string;
+  type: 'Pessoa Física' | 'Pessoa Jurídica';
+  cpfCnpj: string;
   email: string;
+  phone: string;
   conversionDate: string;
   originLeadId: string;
 }
@@ -132,6 +162,7 @@ export interface Contract {
     clientId: string;
     type: 'Fixo' | 'Percentual' | 'Êxito' | 'Híbrido';
     value: number;
+    description: string;
     startDate: string;
 }
 
@@ -139,4 +170,60 @@ export interface PredictiveAnalysis {
   probabilidadeExito: number;
   tempoEstimado: number; // in months
   valorCondenacao: number;
+}
+
+export type WorkflowNodeType = 'trigger' | 'action' | 'condition';
+export type WorkflowModule = 'CRM' | 'Jurídico' | 'Financeiro' | 'Atendimento' | 'Agenda' | 'Sistema';
+
+export interface WorkflowNode {
+  id: string;
+  type: WorkflowNodeType;
+  title: string;
+  description: string;
+  module: WorkflowModule;
+  iconName: 'Contract' | 'Legal' | 'Wallet' | 'Message' | 'Calendar' | 'Task' | 'Finance';
+  condition?: {
+      if: string;
+      thenId: string;
+      elseId: string;
+  };
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  nodes: WorkflowNode[];
+}
+
+export interface Recado {
+    id: string;
+    fromId: string;
+    toId: string; // can be user ID or group ID
+    content: string;
+    timestamp: string;
+    read: boolean;
+}
+
+export interface Conversation {
+    id: string;
+    name: string;
+    unread: number;
+    type: 'user' | 'group';
+}
+
+export interface Meta {
+    id: string;
+    title: string;
+    type: 'Quantitativa' | 'Financeira' | 'Qualitativa';
+    target: number;
+    current: number;
+    period: 'Mensal' | 'Trimestral';
+    assigneeId: string; // user or team ID
+}
+
+export interface ChatMessage {
+    id: string;
+    text: string;
+    sender: 'user' | 'bot';
 }

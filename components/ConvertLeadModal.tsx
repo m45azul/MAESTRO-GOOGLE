@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Lead, Client, Contract, LegalCase, User } from '../types';
-import { mockUsers } from '../data/users';
 
 interface ConvertLeadModalProps {
     isOpen: boolean;
@@ -10,21 +9,25 @@ interface ConvertLeadModalProps {
     setContracts: React.Dispatch<React.SetStateAction<Contract[]>>;
     setCases: React.Dispatch<React.SetStateAction<LegalCase[]>>;
     onSuccess: (clientId: string, contractId: string, caseId: string | null) => void;
+    allUsers: User[];
 }
 
-export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, lead, setClients, setContracts, setCases, onSuccess }) => {
+export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, lead, setClients, setContracts, setCases, onSuccess, allUsers }) => {
     const [createCase, setCreateCase] = useState(false);
-    const [caseTitle, setCaseTitle] = useState(`Caso Inicial - ${lead.name}`);
+    const [caseTitle, setCaseTitle] = useState(lead.description || `Caso Inicial - ${lead.name}`);
     const [responsibleId, setResponsibleId] = useState('');
     
-    const lawyers = mockUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller');
+    const lawyers = allUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller' || u.role === 'Advogado Parceiro');
 
     const handleConvert = () => {
         // 1. Create Client
         const newClient: Client = {
             id: `client-${Date.now()}`,
             name: lead.name,
-            email: `${lead.name.toLowerCase().replace(/\s/g, '.')}@cliente.com`, // mock email
+            type: lead.company.includes('S.A.') || lead.company.includes('Ltda') ? 'Pessoa Jurídica' : 'Pessoa Física',
+            cpfCnpj: '00.000.000/0001-00', // Mock
+            email: lead.email,
+            phone: lead.phone,
             conversionDate: new Date().toISOString().split('T')[0],
             originLeadId: lead.id,
         };
@@ -36,6 +39,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onCl
             clientId: newClient.id,
             type: 'Percentual', // Mock data for MVP
             value: lead.value,
+            description: `Contrato de honorários para ${lead.description}`,
             startDate: new Date().toISOString().split('T')[0],
         };
         setContracts(prev => [...prev, newContract]);
@@ -45,13 +49,16 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onCl
         if (createCase && responsibleId) {
             const newCase: LegalCase = {
                 id: `case-${Date.now()}`,
-                caseNumber: `PROC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
+                processNumber: `PROC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
                 title: caseTitle,
                 clientId: newClient.id,
                 contractId: newContract.id,
                 status: 'Ativo',
                 responsibleId: responsibleId,
+                opposingParty: 'A Definir',
+                court: 'A Definir',
                 updates: [{ id: 'u1', date: new Date().toISOString().split('T')[0], author: 'Sistema', description: 'Processo criado a partir da conversão do lead.' }],
+                timesheet: [],
                 tags: lead.tags,
                 valorCausa: lead.value * 1.5, // Mock
                 honorariosPrevistos: lead.value,
@@ -67,8 +74,8 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onCl
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-            <div className="bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-lg border border-slate-700">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+            <div className="bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-lg border border-slate-700 max-h-[90vh] overflow-y-auto">
                 <h2 className="text-xl font-bold text-white mb-2">Converter Lead em Cliente</h2>
                 <p className="text-slate-400 mb-6">Convertendo: <span className="font-semibold text-slate-200">{lead.name}</span></p>
 

@@ -33,7 +33,8 @@ const ClientCaseTimeline: React.FC<{ caseData: LegalCase }> = ({ caseData }) => 
         <Card className="mb-6">
             <div className="border-b border-slate-700/50 pb-4 mb-4">
                 <h3 className="text-lg font-bold text-white">{caseData.title}</h3>
-                <p className="text-sm text-slate-400 mt-1">Nº do Processo: {caseData.caseNumber}</p>
+                {/* FIX: Changed caseData.caseNumber to caseData.processNumber to match the LegalCase type definition. */}
+                <p className="text-sm text-slate-400 mt-1">Nº do Processo: {caseData.processNumber}</p>
             </div>
             <div className="relative border-l-2 border-slate-700 ml-2">
                 {caseData.updates.slice().reverse().map((update) => (

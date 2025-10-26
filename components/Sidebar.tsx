@@ -1,5 +1,5 @@
 import React from 'react';
-import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon } from './icons';
+import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon, WorkflowIcon, MessageSquareIcon, AwardIcon } from './icons';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
@@ -44,13 +44,16 @@ const ALL_ROLES: UserRole[] = ['MAESTRO', 'Sócio', 'Controller', 'Advogado Inte
 const NAV_ITEMS: NavItemConfig[] = [
     { path: '/', label: 'Dashboard', icon: DashboardIcon, roles: ALL_ROLES },
     { path: '/agenda', label: 'Agenda', icon: CalendarIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'SDR', 'Administrativo', 'Operador de Atendimento'] },
-    { path: '/crm', label: 'CRM/Comercial', icon: CrmIcon, roles: ['MAESTRO', 'Controller', 'SDR', 'Parceiro SDR', 'Advogado Interno'] },
+    { path: '/recados', label: 'Recados', icon: MessageSquareIcon, roles: ALL_ROLES },
+    { path: '/crm', label: 'CRM/Comercial', icon: CrmIcon, roles: ['MAESTRO', 'Controller', 'SDR', 'Parceiro SDR', 'Advogado Interno'], sectionBreak: true },
     { path: '/clientes', label: 'Clientes', icon: UsersIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'SDR', 'Parceiro SDR', 'Operador de Atendimento', 'Administrativo'] },
     { path: '/juridico', label: 'Jurídico', icon: LegalIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'Advogado Parceiro'] },
-    { path: '/carteira', label: 'Minha Carteira', icon: WalletIcon, roles: ['Controller', 'Advogado Interno', 'Advogado Parceiro', 'SDR', 'Parceiro SDR', 'Parceiro Indicador'] },
     { path: '/financeiro', label: 'Financeiro', icon: FinanceIcon, roles: ['MAESTRO', 'Administrativo'] },
-    { path: '/societario', label: 'Societário', icon: BriefcaseIcon, roles: ['MAESTRO', 'Sócio'], sectionBreak: true },
-    { path: '/equipe', label: 'Equipe', icon: TeamIcon, roles: ['MAESTRO', 'Controller'] },
+    { path: '/bonus', label: 'Bônus e Prêmios', icon: AwardIcon, roles: ALL_ROLES, sectionBreak: true },
+    { path: '/carteira', label: 'Minha Carteira', icon: WalletIcon, roles: ['Controller', 'Advogado Interno', 'Advogado Parceiro', 'SDR', 'Parceiro SDR', 'Parceiro Indicador'] },
+    { path: '/societario', label: 'Societário', icon: BriefcaseIcon, roles: ['MAESTRO', 'Sócio'] },
+    { path: '/workflow', label: 'Workflow Engine', icon: WorkflowIcon, roles: ['MAESTRO'] },
+    { path: '/equipe', label: 'Equipe', icon: TeamIcon, roles: ['MAESTRO', 'Controller'], sectionBreak: true },
     { path: '/portal-cliente', label: 'Portal do Cliente', icon: BuildingIcon, roles: ALL_ROLES },
     { path: '/configuracoes', label: 'Configurações', icon: SettingsIcon, roles: ['MAESTRO'], sectionBreak: true },
 ];

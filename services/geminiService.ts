@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 if (!process.env.API_KEY) {
@@ -115,4 +114,33 @@ export const getAIPredictiveAnalysis = async (caseInfo: string): Promise<string>
     }
     throw new Error("An unknown error occurred while generating the AI analysis.");
   }
+};
+
+export const getChatbotResponse = async (prompt: string): Promise<string> => {
+    if (!process.env.API_KEY) {
+        return "API Key not configured. AI features are unavailable.";
+    }
+
+    try {
+        const fullPrompt = `
+            Você é a "Maestro AI", uma assistente de IA integrada à plataforma de gestão jurídica MAESTRO.
+            Sua função é ajudar os usuários da plataforma com dúvidas sobre o sistema e sobre gestão jurídica em geral.
+            Seja amigável, profissional e direto.
+
+            Pergunta do usuário: "${prompt}"
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: fullPrompt,
+        });
+
+        return response.text;
+    } catch (error) {
+        console.error("Error fetching chatbot response:", error);
+        if (error instanceof Error) {
+            return `Error communicating with AI: ${error.message}.`;
+        }
+        return "An unknown error occurred while getting a response.";
+    }
 };

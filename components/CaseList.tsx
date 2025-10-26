@@ -56,7 +56,8 @@ export const CaseList: React.FC<CaseListProps> = ({ cases, selectedCaseId, onSel
             <div className="flex justify-between items-start">
                 <div>
                     <p className="font-bold text-sm text-slate-200">{c.title}</p>
-                    <p className="text-xs text-slate-400 mt-1">{c.caseNumber}</p>
+                    {/* FIX: Changed c.caseNumber to c.processNumber to display the correct property from the LegalCase type. */}
+                    <p className="text-xs text-slate-400 mt-1">{c.processNumber}</p>
                 </div>
                 <span className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getStatusColor(c.status)}`} title={c.status}></span>
             </div>

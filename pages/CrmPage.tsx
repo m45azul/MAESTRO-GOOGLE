@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import type { Lead, PipelineStage, Client, Contract, LegalCase } from '../types';
+import type { Lead, PipelineStage, Client, Contract, LegalCase, User } from '../types';
 import { KanbanColumn } from '../components/KanbanColumn';
 import { AddLeadModal } from '../components/AddLeadModal';
 import { PlusIcon } from '../components/icons';
-import { mockUsers, userMap } from '../data/users';
 import { ConvertLeadModal } from '../components/ConvertLeadModal';
 
 const STAGES: PipelineStage[] = ['Novo', 'Contatado', 'Qualificado', 'Proposta', 'Negociação', 'Ganho'];
@@ -14,9 +13,10 @@ interface CrmPageProps {
     setClients: React.Dispatch<React.SetStateAction<Client[]>>;
     setContracts: React.Dispatch<React.SetStateAction<Contract[]>>;
     setCases: React.Dispatch<React.SetStateAction<LegalCase[]>>;
+    allUsers: User[];
 }
 
-export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, setContracts, setCases }) => {
+export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, setContracts, setCases, allUsers }) => {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,7 +26,7 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
   const [lastAssignedSdrIndex, setLastAssignedSdrIndex] = useState(-1);
   
   const activeLeads = useMemo(() => leads.filter(lead => !lead.isDeleted), [leads]);
-  const sdrs = useMemo(() => mockUsers.filter(u => u.role === 'SDR'), []);
+  const sdrs = useMemo(() => allUsers.filter(u => u.role === 'SDR'), [allUsers]);
 
   const handleDragStart = (leadId: string) => {
     setDraggedLeadId(leadId);
@@ -152,6 +152,7 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
             setContracts={setContracts}
             setCases={setCases}
             onSuccess={handleConvertLead}
+            allUsers={allUsers}
           />
       )}
     </>

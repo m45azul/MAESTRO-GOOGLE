@@ -11,7 +11,6 @@ interface AdvogadoDashboardProps {
 }
 
 export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user }) => {
-    // FIX: Filter cases based on the user's ID to correctly display their workload.
     const myCases = mockCases.filter(c => c.responsibleId === user.id && c.status === 'Ativo');
     const totalValue = myCases.reduce((sum, c) => sum + c.valorCausa, 0);
 
