@@ -7,11 +7,24 @@ export interface Task {
   assignedTo?: string;
 }
 
+export type UserRole =
+  | 'MAESTRO'
+  | 'Sócio'
+  | 'Controller'
+  | 'Advogado Interno'
+  | 'Advogado Parceiro'
+  | 'SDR'
+  | 'Administrativo'
+  | 'Operador de Atendimento'
+  | 'Parceiro Indicador'
+  | 'Parceiro SDR'
+  | 'Parceiro Outros';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'MAESTRO' | 'Controller' | 'Advogado Interno' | 'SDR' | 'Advogado Parceiro' | 'Administrativo' | 'Operador de Atendimento';
+  role: UserRole;
   avatarUrl: string;
 }
 
@@ -120,4 +133,10 @@ export interface Contract {
     type: 'Fixo' | 'Percentual' | 'Êxito' | 'Híbrido';
     value: number;
     startDate: string;
+}
+
+export interface PredictiveAnalysis {
+  probabilidadeExito: number;
+  tempoEstimado: number; // in months
+  valorCondenacao: number;
 }

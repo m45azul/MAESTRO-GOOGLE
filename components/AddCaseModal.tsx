@@ -1,19 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { LegalCase, User, Client } from '../types';
 
 interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddCase: (newCase: Omit<LegalCase, 'id' | 'status' | 'updates'>) => void;
+  onSaveCase: (caseData: Omit<LegalCase, 'id' | 'status' | 'updates'> & { id?: string }) => void;
   lawyers: User[];
   clients: Client[];
+  caseData: LegalCase | null;
 }
 
-export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onAddCase, lawyers, clients }) => {
+export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSaveCase, lawyers, clients, caseData }) => {
     const [title, setTitle] = useState('');
     const [caseNumber, setCaseNumber] = useState('');
     const [clientId, setClientId] = useState('');
     const [responsibleId, setResponsibleId] = useState('');
+    // Mock values from LegalCase that are not in the form
+    const [valorCausa, setValorCausa] = useState(0);
+    const [honorariosPrevistos, setHonorariosPrevistos] = useState(0);
+    const [percentualAdvogado, setPercentualAdvogado] = useState(30);
+    const [tags, setTags] = useState<string[]>([]);
+
+    const isEditing = !!caseData;
+
+    useEffect(() => {
+        if (isOpen && caseData) {
+            setTitle(caseData.title);
+            setCaseNumber(caseData.caseNumber);
+            setClientId(caseData.clientId);
+            setResponsibleId(caseData.responsibleId);
+            setValorCausa(caseData.valorCausa);
+            setHonorariosPrevistos(caseData.honorariosPrevistos);
+            setPercentualAdvogado(caseData.percentualAdvogado);
+            setTags(caseData.tags);
+        } else {
+            setTitle('');
+            setCaseNumber('');
+            setClientId('');
+            setResponsibleId('');
+            setValorCausa(0);
+            setHonorariosPrevistos(0);
+            setPercentualAdvogado(30);
+            setTags([]);
+        }
+    }, [caseData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,22 +51,18 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onA
         alert("Por favor, selecione um cliente e um advogado responsável.");
         return;
     }
-    onAddCase({
+    onSaveCase({
+        id: caseData?.id,
         title,
         caseNumber,
         clientId,
         responsibleId,
-        tags: [], // Tags can be added later
-        valorCausa: 0, // Default values for MVP
-        honorariosPrevistos: 0,
-        percentualAdvogado: 30,
+        tags,
+        valorCausa,
+        honorariosPrevistos,
+        percentualAdvogado,
     });
     onClose();
-    // Reset form
-    setTitle('');
-    setCaseNumber('');
-    setClientId('');
-    setResponsibleId('');
   };
 
   if (!isOpen) return null;
@@ -44,7 +70,7 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onA
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-lg border border-slate-700">
-        <h2 className="text-xl font-bold text-white mb-6">Adicionar Novo Processo</h2>
+        <h2 className="text-xl font-bold text-white mb-6">{isEditing ? 'Editar Processo' : 'Adicionar Novo Processo'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>

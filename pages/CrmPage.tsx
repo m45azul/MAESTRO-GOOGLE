@@ -22,8 +22,11 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [distributionMode, setDistributionMode] = useState<'manual' | 'automatic'>('manual');
+  const [lastAssignedSdrIndex, setLastAssignedSdrIndex] = useState(-1);
   
   const activeLeads = useMemo(() => leads.filter(lead => !lead.isDeleted), [leads]);
+  const sdrs = useMemo(() => mockUsers.filter(u => u.role === 'SDR'), []);
 
   const handleDragStart = (leadId: string) => {
     setDraggedLeadId(leadId);
@@ -44,6 +47,14 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
   };
   
   const handleAddLead = (newLeadData: Omit<Lead, 'id' | 'stage'>) => {
+    
+    if (distributionMode === 'automatic' && sdrs.length > 0) {
+        const nextSdrIndex = (lastAssignedSdrIndex + 1) % sdrs.length;
+        const assignedSdr = sdrs[nextSdrIndex];
+        newLeadData.responsibleId = assignedSdr.id;
+        setLastAssignedSdrIndex(nextSdrIndex);
+    }
+    
     const newLead: Lead = {
         ...newLeadData,
         id: `lead-${Date.now()}`,
@@ -80,13 +91,25 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
     setIsConvertModalOpen(true);
   }
 
-  const sdrs = useMemo(() => mockUsers.filter(u => u.role === 'SDR'), []);
-
   return (
     <>
       <div className="flex justify-between items-center mb-6 px-1">
-        <div>
-            {/* Placeholder for future filters */}
+        <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-slate-300">Distribuição de Leads:</span>
+            <div className="flex items-center p-1 bg-slate-800 rounded-lg">
+                <button 
+                    onClick={() => setDistributionMode('manual')}
+                    className={`px-3 py-1 text-sm rounded-md ${distributionMode === 'manual' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                >
+                    Manual
+                </button>
+                <button 
+                    onClick={() => setDistributionMode('automatic')}
+                    className={`px-3 py-1 text-sm rounded-md ${distributionMode === 'automatic' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                >
+                    Automática
+                </button>
+            </div>
         </div>
         <button
             onClick={() => { setSelectedLead(null); setIsAddModalOpen(true); }}
@@ -117,6 +140,7 @@ export const CrmPage: React.FC<CrmPageProps> = ({ leads, setLeads, setClients, s
             onSave={isEditModalOpen && selectedLead ? handleUpdateLead : handleAddLead}
             sdrs={sdrs}
             lead={selectedLead}
+            distributionMode={distributionMode}
         />
       )}
       {isConvertModalOpen && selectedLead && (

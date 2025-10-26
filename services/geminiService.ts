@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 if (!process.env.API_KEY) {
   console.warn("API_KEY environment variable not set. AI features will be disabled.");
@@ -67,5 +67,52 @@ export const getAICaseSummary = async (caseUpdates: string): Promise<string> => 
         return `Error generating summary: ${error.message}.`;
     }
     return "An unknown error occurred while generating the AI summary.";
+  }
+};
+
+export const getAIPredictiveAnalysis = async (caseInfo: string): Promise<string> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API Key not configured. AI features are unavailable.");
+  }
+  
+  try {
+    const prompt = `
+      Você é um especialista em jurimetria e ciência de dados jurídicos para a MAESTRO.
+      Analise as informações do processo judicial a seguir e, com base em um vasto conhecimento de jurisprudência e estatísticas, forneça uma análise preditiva.
+      
+      Informações do Processo:
+      ${caseInfo}
+
+      Sua resposta DEVE ser um objeto JSON, e nada mais. Use a seguinte estrutura:
+      {
+        "probabilidadeExito": <um número de 0 a 100>,
+        "tempoEstimado": <um número de meses para a resolução>,
+        "valorCondenacao": <um valor monetário estimado em caso de perda>
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                  probabilidadeExito: { type: Type.NUMBER },
+                  tempoEstimado: { type: Type.NUMBER },
+                  valorCondenacao: { type: Type.NUMBER },
+              },
+          },
+      },
+    });
+    
+    return response.text;
+  } catch (error) {
+    console.error("Error fetching AI predictive analysis:", error);
+    if (error instanceof Error) {
+        throw new Error(`Error generating predictive analysis: ${error.message}.`);
+    }
+    throw new Error("An unknown error occurred while generating the AI analysis.");
   }
 };

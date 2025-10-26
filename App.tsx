@@ -10,6 +10,10 @@ import { LegalPage } from './pages/LegalPage';
 import { FinancePage } from './pages/FinancePage';
 import { CarteiraPage } from './pages/CarteiraPage';
 import { ClientsPage } from './pages/ClientsPage';
+import { ClientPortalPage } from './pages/ClientPortalPage';
+import { SocioPage } from './pages/SocioPage';
+import { EquipePage } from './pages/EquipePage';
+import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
 import { mockLeads } from './data/leads';
 import { mockCases } from './data/cases';
 import { mockClients } from './data/clients';
@@ -44,6 +48,14 @@ const DashboardLayout: React.FC = () => {
                 return <CarteiraPage />;
             case '/clientes':
                 return <ClientsPage clients={clients} />;
+            case '/portal-cliente':
+                return <ClientPortalPage />;
+            case '/societario':
+                return <SocioPage />;
+            case '/equipe':
+                return <EquipePage />;
+            case '/configuracoes':
+                return <ConfiguracoesPage />;
             case '/':
             default:
                 return <Dashboard user={user} />;
@@ -58,6 +70,10 @@ const DashboardLayout: React.FC = () => {
             case '/financeiro': return 'Financeiro';
             case '/carteira': return 'Minha Carteira';
             case '/clientes': return 'Clientes';
+            case '/portal-cliente': return 'Portal do Cliente';
+            case '/societario': return 'Societário';
+            case '/equipe': return 'Equipe';
+            case '/configuracoes': return 'Configurações';
             case '/':
             default: return 'Dashboard';
         }

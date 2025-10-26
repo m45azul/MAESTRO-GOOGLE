@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import type { LegalCase } from '../types';
+import type { LegalCase, PredictiveAnalysis } from '../types';
 import { Card } from './Card';
-import { FileTextIcon, MoreVerticalIcon, EditIcon, TrashIcon, SparklesIcon } from './icons';
+import { FileTextIcon, MoreVerticalIcon, EditIcon, TrashIcon, SparklesIcon, BrainCircuitIcon } from './icons';
 import { userMap } from '../data/users';
 import { clientMap } from '../data/clients';
 import { tagMap } from '../data/tags';
 import { TagBadge } from './TagBadge';
-import { getAICaseSummary } from '../services/geminiService';
+import { getAICaseSummary, getAIPredictiveAnalysis } from '../services/geminiService';
 
 interface CaseDetailsProps {
   caseData?: LegalCase;
@@ -24,20 +24,43 @@ const getStatusClasses = (status: LegalCase['status']) => {
     }
 }
 
+const PredictiveAnalysisCard: React.FC<{ analysis: PredictiveAnalysis }> = ({ analysis }) => (
+    <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="p-3 bg-slate-800/50 rounded-lg text-center">
+            <p className="text-2xl font-bold text-green-400">{analysis.probabilidadeExito}%</p>
+            <p className="text-xs text-slate-400">Probabilidade de Êxito</p>
+        </div>
+        <div className="p-3 bg-slate-800/50 rounded-lg text-center">
+            <p className="text-2xl font-bold text-amber-400">{analysis.tempoEstimado} meses</p>
+            <p className="text-xs text-slate-400">Tempo Estimado</p>
+        </div>
+        <div className="p-3 bg-slate-800/50 rounded-lg text-center">
+            <p className="text-2xl font-bold text-red-400">R$ {analysis.valorCondenacao.toLocaleString('pt-BR')}</p>
+            <p className="text-xs text-slate-400">Condenação Estimada</p>
+        </div>
+    </div>
+);
+
 export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate, onEdit, onArchive }) => {
     const [newUpdate, setNewUpdate] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [summary, setSummary] = useState('');
     const [isSummarizing, setIsSummarizing] = useState(false);
+    const [predictiveAnalysis, setPredictiveAnalysis] = useState<PredictiveAnalysis | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisError, setAnalysisError] = useState('');
 
     useEffect(() => {
         setSummary('');
+        setPredictiveAnalysis(null);
+        setAnalysisError('');
     }, [caseData?.id]);
 
     const handleSummarize = async () => {
         if (!caseData || caseData.updates.length === 0) return;
 
         setIsSummarizing(true);
+        setSummary('');
         const updatesText = caseData.updates
             .map(u => `Em ${new Date(u.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}, ${u.author} registrou: "${u.description}"`)
             .join('\n');
@@ -50,6 +73,30 @@ export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate,
             setSummary("Não foi possível gerar o resumo. Tente novamente.");
         } finally {
             setIsSummarizing(false);
+        }
+    };
+
+    const handlePredictiveAnalysis = async () => {
+        if (!caseData) return;
+        setIsAnalyzing(true);
+        setPredictiveAnalysis(null);
+        setAnalysisError('');
+        
+        const caseInfo = `
+            Título: ${caseData.title}
+            Valor da Causa: R$ ${caseData.valorCausa}
+            Tags (Área): ${caseData.tags.map(t => tagMap.get(t)?.name).join(', ')}
+            Últimos andamentos: ${caseData.updates.slice(-3).map(u => u.description).join('; ')}
+        `;
+
+        try {
+            const result = await getAIPredictiveAnalysis(caseInfo);
+            setPredictiveAnalysis(JSON.parse(result));
+        } catch (error) {
+            console.error("Failed to get predictive analysis:", error);
+            setAnalysisError("Não foi possível gerar a análise preditiva. Tente novamente.");
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
@@ -71,6 +118,7 @@ export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate,
 
     return (
         <Card className="h-full flex flex-col">
+            {/* Header */}
             <div className="border-b border-slate-700/50 pb-4 mb-4">
                 <div className="flex justify-between items-start">
                     <h2 className="text-xl font-bold text-white pr-8">{caseData.title}</h2>
@@ -101,36 +149,56 @@ export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate,
                 </div>
             </div>
             
+            {/* AI Section */}
             <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-white">Andamentos</h3>
-                <button
-                    onClick={handleSummarize}
-                    disabled={isSummarizing || caseData.updates.length === 0}
-                    className="flex items-center text-xs px-2 py-1 bg-indigo-600/50 text-indigo-300 rounded-md hover:bg-indigo-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <SparklesIcon className="w-4 h-4 mr-1.5" />
-                    {isSummarizing ? 'Resumindo...' : 'Resumir com IA'}
-                </button>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={handleSummarize}
+                        disabled={isSummarizing || caseData.updates.length === 0}
+                        className="flex items-center text-xs px-2 py-1 bg-indigo-600/50 text-indigo-300 rounded-md hover:bg-indigo-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <SparklesIcon className="w-4 h-4 mr-1.5" />
+                        {isSummarizing ? 'Resumindo...' : 'Resumir'}
+                    </button>
+                    <button
+                        onClick={handlePredictiveAnalysis}
+                        disabled={isAnalyzing}
+                        className="flex items-center text-xs px-2 py-1 bg-purple-600/50 text-purple-300 rounded-md hover:bg-purple-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <BrainCircuitIcon className="w-4 h-4 mr-1.5" />
+                        {isAnalyzing ? 'Analisando...' : 'Análise Preditiva'}
+                    </button>
+                </div>
             </div>
 
-            {isSummarizing && (
+            {(isSummarizing || isAnalyzing) && (
                 <div className="flex justify-center items-center p-4 mb-4 bg-slate-800/50 rounded-lg">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400"></div>
                 </div>
             )}
             {summary && !isSummarizing && (
                 <div className="p-4 mb-4 bg-indigo-900/30 rounded-lg border border-indigo-500/50 text-sm text-slate-300">
-                    <h4 className="font-bold text-indigo-300 mb-2 flex items-center">
-                        <SparklesIcon className="w-4 h-4 mr-2" />
-                        Resumo da IA
-                    </h4>
+                    <h4 className="font-bold text-indigo-300 mb-2 flex items-center"><SparklesIcon className="w-4 h-4 mr-2" /> Resumo da IA</h4>
                     <p className="whitespace-pre-wrap">{summary}</p>
                 </div>
             )}
+             {predictiveAnalysis && !isAnalyzing && (
+                <div className="p-4 mb-4 bg-purple-900/30 rounded-lg border border-purple-500/50">
+                    <h4 className="font-bold text-purple-300 mb-3 flex items-center"><BrainCircuitIcon className="w-4 h-4 mr-2" /> Análise Preditiva da IA</h4>
+                    <PredictiveAnalysisCard analysis={predictiveAnalysis} />
+                </div>
+            )}
+            {analysisError && !isAnalyzing && (
+                 <div className="p-4 mb-4 bg-red-900/30 rounded-lg border border-red-500/50 text-sm text-red-300">
+                    <p>{analysisError}</p>
+                </div>
+            )}
 
+            {/* Updates Timeline */}
             <div className="flex-1 overflow-y-auto pr-2 mb-4">
                 <div className="relative border-l-2 border-slate-700 ml-2">
-                    {caseData.updates.slice().reverse().map((update, index) => (
+                    {caseData.updates.slice().reverse().map((update) => (
                         <div key={update.id} className="mb-6 ml-6">
                              <span className="absolute flex items-center justify-center w-6 h-6 bg-slate-700 rounded-full -left-3 ring-4 ring-slate-800">
                                 <FileTextIcon className="w-3 h-3 text-indigo-400"/>
@@ -146,6 +214,7 @@ export const CaseDetails: React.FC<CaseDetailsProps> = ({ caseData, onAddUpdate,
                 </div>
             </div>
 
+            {/* Add Update Form */}
             <form onSubmit={handleSubmit} className="mt-auto pt-4 border-t border-slate-700/50">
                 <textarea
                     value={newUpdate}

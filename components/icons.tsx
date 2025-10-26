@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const MaestroLogo = () => (
@@ -99,4 +98,36 @@ export const MoreVerticalIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.93 2.07 12 7l2.07-4.93M2.07 9.93 7 12l-4.93 2.07M12 22l-2.07-4.93L12 12l2.07 4.93L12 22Z"/><path d="M17 12l4.93-2.07L17 7l-4.93 2.07L17 12Z"/></svg>
+);
+
+export const BrainCircuitIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5a3 3 0 1 0-5.993.142"/>
+        <path d="M18 13a3 3 0 1 0-3-3m-3 3a3 3 0 1 0-3 3m3-3v1m0 5a3 3 0 1 0 3 3"/>
+        <path d="M14.5 5.5A3 3 0 1 0 12 8a3 3 0 0 0 2.5-2.5Z"/>
+        <path d="M14 13h1"/>
+        <path d="M6 13H5"/>
+        <path d="M12 19v-1"/>
+        <path d="M9.5 7.5A3 3 0 1 0 7 10a3 3 0 0 0 2.5-2.5Z"/>
+    </svg>
+);
+
+export const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+        <path d="M9 22v-4h6v4"/>
+        <path d="M8 6h.01"/>
+        <path d="M16 6h.01"/>
+        <path d="M12 6h.01"/>
+        <path d="M12 10h.01"/>
+        <path d="M12 14h.01"/>
+        <path d="M16 10h.01"/>
+        <path d="M16 14h.01"/>
+        <path d="M8 10h.01"/>
+        <path d="M8 14h.01"/>
+    </svg>
+);
+
+export const BriefcaseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
 );
