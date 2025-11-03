@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
-import { Card } from '../components/Card';
-import { useAuth } from '../context/AuthContext';
-import { MuralPost, Comment } from '../types';
-import { userMap } from '../data/users';
-import { ThumbsUpIcon, MessageCircleIcon } from '../components/icons';
 
-interface MuralPageProps {
-  posts: MuralPost[];
-  setPosts: React.Dispatch<React.SetStateAction<MuralPost[]>>;
+import React, { useState } from 'react';
+import { Card } from '../components/Card.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { Comment, MuralPost, User } from '../types.ts';
+import { userMap } from '../data/allData.ts';
+import { ThumbsUpIcon, MessageCircleIcon } from '../components/icons.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
+
+interface CommentSectionProps {
+    post: MuralPost;
+    currentUser: User;
 }
 
-const CommentSection: React.FC<{ post: MuralPost, onAddComment: (postId: string, content: string) => void }> = ({ post, onAddComment }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ post, currentUser }) => {
+    const { addMuralComment } = useApi();
     const [newComment, setNewComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if(newComment.trim()) {
-            onAddComment(post.id, newComment);
+            setIsSubmitting(true);
+            await addMuralComment(post.id, currentUser.id, newComment);
+            setIsSubmitting(false);
             setNewComment('');
         }
     };
@@ -42,17 +49,26 @@ const CommentSection: React.FC<{ post: MuralPost, onAddComment: (postId: string,
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Escreva um comentário..."
                     className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
+                    disabled={isSubmitting}
                 />
-                <button type="submit" className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 text-sm">Comentar</button>
+                <button type="submit" className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 text-sm disabled:opacity-50" disabled={isSubmitting || !newComment.trim()}>
+                    {isSubmitting ? '...' : 'Comentar'}
+                </button>
             </form>
         </div>
     )
 }
 
-const PostCard: React.FC<{ post: MuralPost; onLike: (postId: string) => void; onAddComment: (postId: string, content: string) => void; currentUserId: string; }> = ({ post, onLike, onAddComment, currentUserId }) => {
+interface PostCardProps {
+    post: MuralPost;
+    currentUser: User;
+}
+
+const PostCard: React.FC<PostCardProps> = ({ post, currentUser }) => {
+    const { likeMuralPost } = useApi();
     const author = userMap.get(post.authorId);
     const [showComments, setShowComments] = useState(false);
-    const hasLiked = post.likes.includes(currentUserId);
+    const hasLiked = post.likes.includes(currentUser.id);
 
     return (
         <Card className="mb-4">
@@ -65,7 +81,7 @@ const PostCard: React.FC<{ post: MuralPost; onLike: (postId: string) => void; on
             </div>
             <p className="mt-4 text-slate-300 whitespace-pre-wrap">{post.content}</p>
             <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center space-x-4">
-                <button onClick={() => onLike(post.id)} className={`flex items-center text-sm transition-colors ${hasLiked ? 'text-indigo-400 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+                <button onClick={() => likeMuralPost(post.id, currentUser.id)} className={`flex items-center text-sm transition-colors ${hasLiked ? 'text-indigo-400 font-semibold' : 'text-slate-400 hover:text-white'}`}>
                     <ThumbsUpIcon className="w-4 h-4 mr-1.5"/> 
                     {post.likes.length} Curtir
                 </button>
@@ -74,54 +90,26 @@ const PostCard: React.FC<{ post: MuralPost; onLike: (postId: string) => void; on
                     {post.comments.length} Comentários
                 </button>
             </div>
-            {showComments && <CommentSection post={post} onAddComment={onAddComment} />}
+            {showComments && <CommentSection post={post} currentUser={currentUser} />}
         </Card>
     );
 };
 
-export const MuralPage: React.FC<MuralPageProps> = ({ posts, setPosts }) => {
+export const MuralPage: React.FC = () => {
     const { user } = useAuth();
-    const [newPostContent, setNewPostContent] = useState('');
+    const { data, isLoading, addMuralPost } = useApi();
+    const { muralPosts: posts = [] } = data || {};
 
-    const handleAddPost = (e: React.FormEvent) => {
+    const [newPostContent, setNewPostContent] = useState('');
+    const [isPosting, setIsPosting] = useState(false);
+
+    const handleAddPost = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPostContent.trim() || !user) return;
-        const newPost: MuralPost = {
-            id: `post-${Date.now()}`,
-            authorId: user.id,
-            content: newPostContent,
-            timestamp: new Date().toISOString(),
-            likes: [],
-            comments: []
-        };
-        setPosts(prev => [newPost, ...prev]);
+        setIsPosting(true);
+        await addMuralPost(user.id, newPostContent);
+        setIsPosting(false);
         setNewPostContent('');
-    };
-
-    const handleLike = (postId: string) => {
-        if (!user) return;
-        setPosts(prevPosts => prevPosts.map(p => {
-            if (p.id === postId) {
-                const newLikes = p.likes.includes(user.id)
-                    ? p.likes.filter(uid => uid !== user.id)
-                    : [...p.likes, user.id];
-                return { ...p, likes: newLikes };
-            }
-            return p;
-        }));
-    };
-
-    const handleAddComment = (postId: string, content: string) => {
-        if (!user) return;
-        const newComment: Comment = {
-            id: `comment-${Date.now()}`,
-            authorId: user.id,
-            content,
-            timestamp: new Date().toISOString()
-        };
-        setPosts(prevPosts => prevPosts.map(p => 
-            p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p
-        ));
     };
 
     if (!user) return null;
@@ -135,19 +123,31 @@ export const MuralPage: React.FC<MuralPageProps> = ({ posts, setPosts }) => {
                         onChange={(e) => setNewPostContent(e.target.value)}
                         placeholder={`No que você está pensando, ${user.name}?`}
                         className="w-full h-24 p-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        disabled={isPosting}
                     />
                     <div className="flex justify-end mt-3">
-                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={!newPostContent.trim()}>
-                            Postar
+                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={isPosting || !newPostContent.trim()}>
+                            {isPosting ? 'Postando...' : 'Postar'}
                         </button>
                     </div>
                 </form>
             </Card>
 
             <div>
-                {posts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(post => (
-                    <PostCard key={post.id} post={post} onLike={handleLike} onAddComment={handleAddComment} currentUserId={user.id} />
-                ))}
+                {isLoading ? (
+                     <div className="space-y-4">
+                        <SkeletonLoader className="h-40" />
+                        <SkeletonLoader className="h-32" />
+                    </div>
+                ) : posts.length === 0 ? (
+                    <Card className="text-center text-slate-500 py-8">
+                        O mural está vazio. Seja o primeiro a postar!
+                    </Card>
+                ) : (
+                    posts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(post => (
+                        <PostCard key={post.id} post={post} currentUser={user} />
+                    ))
+                )}
             </div>
         </div>
     );

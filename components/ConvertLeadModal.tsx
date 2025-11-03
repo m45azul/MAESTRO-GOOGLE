@@ -1,74 +1,28 @@
 import React, { useState } from 'react';
-import { Lead, Client, Contract, LegalCase, User } from '../types';
+import { Lead, User } from '../types.ts';
 
 interface ConvertLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
     lead: Lead;
-    setClients: React.Dispatch<React.SetStateAction<Client[]>>;
-    setContracts: React.Dispatch<React.SetStateAction<Contract[]>>;
-    setCases: React.Dispatch<React.SetStateAction<LegalCase[]>>;
-    onSuccess: (clientId: string, contractId: string, caseId: string | null) => void;
+    onConvert: (createCase: boolean, caseTitle: string, responsibleId: string) => Promise<void>;
     allUsers: User[];
+    isProcessing: boolean;
 }
 
-export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, lead, setClients, setContracts, setCases, onSuccess, allUsers }) => {
+export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, lead, onConvert, allUsers, isProcessing }) => {
     const [createCase, setCreateCase] = useState(false);
     const [caseTitle, setCaseTitle] = useState(lead.description || `Caso Inicial - ${lead.name}`);
     const [responsibleId, setResponsibleId] = useState('');
     
     const lawyers = allUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller' || u.role === 'Advogado Parceiro');
 
-    const handleConvert = () => {
-        // 1. Create Client
-        const newClient: Client = {
-            id: `client-${Date.now()}`,
-            name: lead.name,
-            type: lead.company.includes('S.A.') || lead.company.includes('Ltda') ? 'Pessoa Jurídica' : 'Pessoa Física',
-            cpfCnpj: '00.000.000/0001-00', // Mock
-            email: lead.email,
-            phone: lead.phone,
-            conversionDate: new Date().toISOString().split('T')[0],
-            originLeadId: lead.id,
-        };
-        setClients(prev => [...prev, newClient]);
-        
-        // 2. Create Contract
-        const newContract: Contract = {
-            id: `contract-${Date.now()}`,
-            clientId: newClient.id,
-            type: 'Percentual', // Mock data for MVP
-            value: lead.value,
-            description: `Contrato de honorários para ${lead.description}`,
-            startDate: new Date().toISOString().split('T')[0],
-        };
-        setContracts(prev => [...prev, newContract]);
-        
-        let newCaseId: string | null = null;
-        // 3. Optionally create Legal Case
-        if (createCase && responsibleId) {
-            const newCase: LegalCase = {
-                id: `case-${Date.now()}`,
-                processNumber: `PROC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
-                title: caseTitle,
-                clientId: newClient.id,
-                contractId: newContract.id,
-                status: 'Ativo',
-                responsibleId: responsibleId,
-                opposingParty: 'A Definir',
-                court: 'A Definir',
-                updates: [{ id: 'u1', date: new Date().toISOString().split('T')[0], author: 'Sistema', description: 'Processo criado a partir da conversão do lead.' }],
-                timesheet: [],
-                tags: lead.tags,
-                valorCausa: lead.value * 1.5, // Mock
-                honorariosPrevistos: lead.value,
-                percentualAdvogado: 30, // Mock
-            };
-            setCases(prev => [...prev, newCase]);
-            newCaseId = newCase.id;
+    const handleConfirm = async () => {
+        if (createCase && !responsibleId) {
+            alert("Por favor, selecione um advogado responsável para o novo processo.");
+            return;
         }
-        
-        onSuccess(newClient.id, newContract.id, newCaseId);
+        await onConvert(createCase, caseTitle, responsibleId);
     };
 
     if (!isOpen) return null;
@@ -113,8 +67,10 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onCl
                 </div>
 
                 <div className="mt-8 flex justify-end space-x-4">
-                    <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">Cancelar</button>
-                    <button onClick={handleConvert} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Confirmar Conversão</button>
+                    <button type="button" onClick={onClose} disabled={isProcessing} className="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50">Cancelar</button>
+                    <button onClick={handleConfirm} disabled={isProcessing} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+                        {isProcessing ? 'Convertendo...' : 'Confirmar Conversão'}
+                    </button>
                 </div>
             </div>
         </div>

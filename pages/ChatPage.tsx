@@ -1,21 +1,20 @@
+
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Card } from '../components/Card';
-import { userMap } from '../data/users';
-import { useAuth } from '../context/AuthContext';
-import { ChatMessage, ChatConversation, User } from '../types';
-import { PlusIcon } from '../components/icons';
-import { NewConversationModal } from '../components/NewConversationModal';
+import { Card } from '../components/Card.tsx';
+import { userMap } from '../data/allData.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { ChatMessage, ChatConversation, User } from '../types.ts';
+import { PlusIcon } from '../components/icons.tsx';
+import { NewConversationModal } from '../components/NewConversationModal.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
 
-interface ChatPageProps {
-  messages: ChatMessage[];
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-  conversations: ChatConversation[];
-  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
-  allUsers: User[];
-}
-
-export const ChatPage: React.FC<ChatPageProps> = ({ messages, setMessages, conversations, setConversations, allUsers }) => {
+export const ChatPage: React.FC = () => {
     const { user } = useAuth();
+    const { data, isLoading, addChatMessage, setConversations } = useApi();
+    const { chatMessages: messages = [], chatConversations: conversations = [], users: allUsers = [] } = data || {};
+
     const [selectedConversationId, setSelectedConversationId] = useState('user-adv-1');
     const [message, setMessage] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -32,9 +31,10 @@ export const ChatPage: React.FC<ChatPageProps> = ({ messages, setMessages, conve
 
     const handleSelectConversation = (conversationId: string) => {
         setSelectedConversationId(conversationId);
-        setConversations(prev => prev.map(c => 
+        const updatedConversations = conversations.map(c => 
             c.id === conversationId ? { ...c, unread: 0 } : c
-        ));
+        );
+        setConversations(updatedConversations);
     };
 
     const handleStartConversation = (targetUser: User) => {
@@ -51,7 +51,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ messages, setMessages, conve
                 unread: 0,
                 type: 'user',
             };
-            setConversations(prev => [newConversation, ...prev]);
+            setConversations([newConversation, ...conversations]);
             setSelectedConversationId(newConversation.id);
         }
         setIsNewConversationModalOpen(false);
@@ -75,20 +75,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({ messages, setMessages, conve
 
     useEffect(scrollToBottom, [conversationMessages]);
     
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (message.trim() === '' || !user || !selectedConversation) return;
-
-        const newMessage: ChatMessage = {
-            id: `msg-${Date.now()}`,
-            fromId: user.id,
-            toId: selectedConversation.id,
-            content: message,
-            timestamp: new Date().toISOString(),
-            read: true,
-        };
-
-        setMessages(prev => [...prev, newMessage]);
+        
+        const tempMessage = message;
         setMessage('');
+        await addChatMessage(user.id, selectedConversation.id, tempMessage);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -99,6 +91,15 @@ export const ChatPage: React.FC<ChatPageProps> = ({ messages, setMessages, conve
     }
 
     if(!user) return null;
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-8rem)] gap-6">
+                <SkeletonLoader className="w-1/3 h-full" />
+                <SkeletonLoader className="w-2/3 h-full" />
+            </div>
+        )
+    }
 
     return (
         <>

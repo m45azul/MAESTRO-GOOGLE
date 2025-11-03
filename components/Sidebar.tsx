@@ -1,7 +1,8 @@
+
 import React from 'react';
-import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon, WorkflowIcon, MessageSquareIcon, AwardIcon, ClipboardListIcon } from './icons';
-import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
+import { CrmIcon, DashboardIcon, FinanceIcon, LegalIcon, MaestroLogo, SettingsIcon, TeamIcon, LogoutIcon, CalendarIcon, WalletIcon, UsersIcon, BuildingIcon, BriefcaseIcon, WorkflowIcon, MessageSquareIcon, AwardIcon, ClipboardListIcon, BarChartIcon, HeadphonesIcon } from './icons.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { UserRole } from '../types.ts';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -28,7 +29,8 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick, disable
 
 interface SidebarProps {
     currentRoute: string;
-    setRoute: (route: string) => void;
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
 }
 
 interface NavItemConfig {
@@ -50,8 +52,10 @@ const NAV_ITEMS: NavItemConfig[] = [
     { path: '/clientes', label: 'Clientes', icon: UsersIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'SDR', 'Parceiro SDR', 'Operador de Atendimento', 'Administrativo'] },
     { path: '/juridico', label: 'Jurídico', icon: LegalIcon, roles: ['MAESTRO', 'Controller', 'Advogado Interno', 'Advogado Parceiro'] },
     { path: '/financeiro', label: 'Financeiro', icon: FinanceIcon, roles: ['MAESTRO', 'Administrativo'] },
+    { path: '/atendimento', label: 'Atendimento', icon: HeadphonesIcon, roles: ['MAESTRO', 'Controller', 'Operador de Atendimento'] },
     { path: '/bonus', label: 'Bônus e Prêmios', icon: AwardIcon, roles: ALL_ROLES, sectionBreak: true },
     { path: '/carteira', label: 'Minha Carteira', icon: WalletIcon, roles: ['Controller', 'Advogado Interno', 'Advogado Parceiro', 'SDR', 'Parceiro SDR', 'Parceiro Indicador'] },
+    { path: '/bi', label: 'BI / Relatórios', icon: BarChartIcon, roles: ['MAESTRO'] },
     { path: '/societario', label: 'Societário', icon: BriefcaseIcon, roles: ['MAESTRO', 'Sócio'] },
     { path: '/workflow', label: 'Workflow Engine', icon: WorkflowIcon, roles: ['MAESTRO'] },
     { path: '/equipe', label: 'Equipe', icon: TeamIcon, roles: ['MAESTRO', 'Controller'], sectionBreak: true },
@@ -59,19 +63,24 @@ const NAV_ITEMS: NavItemConfig[] = [
     { path: '/configuracoes', label: 'Configurações', icon: SettingsIcon, roles: ['MAESTRO'], sectionBreak: true },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, isOpen, setIsOpen }) => {
     const { user, logout } = useAuth();
     if (!user) return null;
 
     const availableNavItems = NAV_ITEMS.filter(item => item.roles.includes(user.role));
+    
+    const handleNavigation = (path: string) => {
+        window.location.hash = `#${path}`;
+        setIsOpen(false);
+    }
 
     return (
-        <aside className="w-64 flex-shrink-0 bg-slate-800/50 hidden md:flex flex-col border-r border-slate-700/50">
+        <aside className={`fixed inset-y-0 left-0 z-30 w-64 flex-shrink-0 bg-slate-800/95 backdrop-blur-sm flex flex-col border-r border-slate-700/50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <div className="flex items-center h-16 px-6 border-b border-slate-700/50 flex-shrink-0">
                 <MaestroLogo />
                 <span className="ml-3 text-lg font-semibold text-white">MAESTRO</span>
             </div>
-            <nav className="flex-1 px-4 py-6 space-y-1">
+            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                  {availableNavItems.map((item) => (
                     <React.Fragment key={item.path}>
                         {item.sectionBreak && <div className="pt-2 mt-2 border-t border-slate-700/50"></div>}
@@ -79,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute }) => {
                             icon={<item.icon className="w-5 h-5" />} 
                             label={item.label} 
                             active={currentRoute === item.path} 
-                            onClick={() => setRoute(item.path)} 
+                            onClick={() => handleNavigation(item.path)} 
                         />
                     </React.Fragment>
                 ))}

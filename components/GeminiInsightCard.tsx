@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { getAIInsights } from '../services/geminiService';
-import { Card } from './Card';
+import { getAIInsights } from '../services/geminiService.ts';
+import { Card } from './Card.tsx';
 
 interface GeminiInsightCardProps {
     kpiData: string;
@@ -41,8 +42,7 @@ export const GeminiInsightCard: React.FC<GeminiInsightCardProps> = ({ kpiData })
 
     useEffect(() => {
         fetchInsights();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchInsights]);
 
     return (
         <Card className="h-full">

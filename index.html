@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -20,6 +19,15 @@
         },
       }
     </script>
+    <style>
+      @keyframes fadeInFast {
+        from { opacity: 0; transform: translateX(-5px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .animate-fade-in-fast {
+        animation: fadeInFast 0.2s ease-out forwards;
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {

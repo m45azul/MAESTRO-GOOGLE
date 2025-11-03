@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { Transaction, TransactionType, TransactionStatus } from '../types';
+import { Transaction, TransactionType, TransactionStatus } from '../types.ts';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'reconciled'> & { id?: string }) => void;
+  onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'reconciled'> & { id?: string }) => Promise<void>;
   transaction: Transaction | null;
 }
 
@@ -35,9 +35,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
     }
   }, [transaction, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveTransaction({
+    await onSaveTransaction({
       id: transaction?.id,
       date,
       description,

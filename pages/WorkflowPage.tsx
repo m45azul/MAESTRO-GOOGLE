@@ -1,8 +1,10 @@
+
+
 import React, { useState } from 'react';
-import { Card } from '../components/Card';
-import { mockWorkflows } from '../data/workflows';
-import type { Workflow } from '../types';
-import { WorkflowEditor } from '../components/WorkflowEditor';
+import { Card } from '../components/Card.tsx';
+import { mockWorkflows } from '../data/workflows.tsx';
+import { Workflow } from '../types.ts';
+import { WorkflowEditor } from '../components/WorkflowEditor.tsx';
 
 export const WorkflowPage: React.FC = () => {
     const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow>(mockWorkflows[0]);

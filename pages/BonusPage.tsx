@@ -1,15 +1,20 @@
+
 import React from 'react';
-import { Card } from '../components/Card';
-import { mockMetas, mockRanking } from '../data/metas';
-import { useAuth } from '../context/AuthContext';
-import { userMap } from '../data/users';
-import { Meta } from '../types';
-import { AwardIcon } from '../components/icons';
+import { Card } from '../components/Card.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { Meta, RankingItem, User } from '../types.ts';
+import { AwardIcon } from '../components/icons.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
 
+interface GoalCardProps {
+    meta: Meta;
+    users: User[];
+}
 
-const GoalCard: React.FC<{ meta: Meta }> = ({ meta }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ meta, users }) => {
     const progress = Math.min((meta.current / meta.target) * 100, 100);
-    const assignee = userMap.get(meta.assigneeId);
+    const assignee = users.find(u => u.id === meta.assigneeId);
     return (
         <Card>
             <p className="text-sm font-medium text-slate-400">{meta.title} ({meta.period})</p>
@@ -25,12 +30,18 @@ const GoalCard: React.FC<{ meta: Meta }> = ({ meta }) => {
     );
 };
 
-const PerformanceRanking: React.FC = () => {
+interface PerformanceRankingProps {
+    ranking: RankingItem[];
+    users: User[];
+}
+
+const PerformanceRanking: React.FC<PerformanceRankingProps> = ({ ranking, users }) => {
+    const userMap = new Map<string, User>(users.map(u => [u.id, u]));
     return (
         <Card>
             <h3 className="text-lg font-semibold text-white mb-4">Ranking de Performance (Mês)</h3>
             <div className="space-y-3">
-                {mockRanking.map(item => (
+                {ranking.map(item => (
                     <div key={item.userId} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
                         <div className="flex items-center">
                             <span className="font-bold text-lg text-slate-400 w-6">{item.rank}°</span>
@@ -50,9 +61,24 @@ const PerformanceRanking: React.FC = () => {
 
 export const BonusPage: React.FC = () => {
     const { user } = useAuth();
+    const { data, isLoading } = useApi();
+    const { metas = [], ranking = [], users = [] } = data || {};
+
     if (!user) return null;
     
-    const myMetas = mockMetas.filter(m => m.assigneeId === user.id);
+    const myMetas = metas.filter(m => m.assigneeId === user.id);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-8">
+                <SkeletonLoader className="h-10 w-1/3" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => <SkeletonLoader key={i} className="h-32" />)}
+                </div>
+                 <SkeletonLoader className="h-64" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -65,7 +91,7 @@ export const BonusPage: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-semibold text-white mb-4">Minhas Metas</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {myMetas.map(meta => <GoalCard key={meta.id} meta={meta} />)}
+                        {myMetas.map(meta => <GoalCard key={meta.id} meta={meta} users={users} />)}
                     </div>
                 </div>
             )}
@@ -73,12 +99,12 @@ export const BonusPage: React.FC = () => {
             <div>
                  <h2 className="text-xl font-semibold text-white mb-4">Metas da Equipe</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockMetas.filter(m => m.assigneeId === 'team-legal').map(meta => <GoalCard key={meta.id} meta={meta} />)}
+                    {metas.filter(m => m.assigneeId === 'team-legal').map(meta => <GoalCard key={meta.id} meta={meta} users={users} />)}
                 </div>
             </div>
 
             <div>
-                <PerformanceRanking />
+                <PerformanceRanking ranking={ranking} users={users} />
             </div>
 
         </div>

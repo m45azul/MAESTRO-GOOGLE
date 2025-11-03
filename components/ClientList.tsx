@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card } from './Card';
-import { Client } from '../types';
-import { UsersIcon } from './icons';
+import { Card } from './Card.tsx';
+import { Client } from '../types.ts';
+import { UsersIcon } from './icons.tsx';
 
 interface ClientListProps {
     clients: Client[];

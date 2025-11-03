@@ -1,11 +1,11 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import type { User } from '../types';
-import { userMap } from '../data/users';
+import { User } from '../types.ts';
+import { userMap } from '../data/allData.ts';
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (userId: string) => void;
+  login: (userId: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -14,12 +14,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = (userId: string) => {
+  const login = async (userId: string) => {
+    // Simulate API call
+    await new Promise(res => setTimeout(res, 300));
     const userToLogin = userMap.get(userId);
     if (userToLogin) {
       setUser(userToLogin);
     } else {
-      console.error(`User with id ${userId} not found`);
+      console.error(`User with ID ${userId} not found.`);
+      throw new Error("User not found");
     }
   };
 
@@ -27,10 +30,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  const isLoggedIn = !!user;
-
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

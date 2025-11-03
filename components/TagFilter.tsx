@@ -3,15 +3,16 @@
 // A full implementation would use a library like react-select.
 
 import React from 'react';
-import { mockTags } from '../data/tags';
-import { TagBadge } from './TagBadge';
+import { Tag } from '../types.ts';
+import { TagBadge } from './TagBadge.tsx';
 
 interface TagFilterProps {
   selectedTags: string[];
   onTagFilterChange: (tagIds: string[]) => void;
+  allTags: Tag[];
 }
 
-export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagFilterChange }) => {
+export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagFilterChange, allTags }) => {
 
   const handleTagClick = (tagId: string) => {
     const newSelectedTags = selectedTags.includes(tagId)
@@ -21,10 +22,10 @@ export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagFilterC
   };
 
   return (
-    <div className="mb-4">
+    <div>
         <label className="block text-sm font-medium text-slate-400 mb-2">Filtrar por Tags:</label>
         <div className="flex flex-wrap gap-2">
-            {mockTags.map(tag => (
+            {allTags.map(tag => (
                 <button
                     key={tag.id}
                     onClick={() => handleTagClick(tag.id)}

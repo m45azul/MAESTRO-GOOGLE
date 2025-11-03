@@ -1,44 +1,46 @@
+
 import React, { useState } from 'react';
-import { Card } from '../components/Card';
-import { UserTable } from '../components/UserTable';
-import { AddUserModal } from '../components/AddUserModal';
-import { User } from '../types';
-import { PlusIcon } from '../components/icons';
-import { useAuth } from '../context/AuthContext';
+import { Card } from '../components/Card.tsx';
+import { UserTable } from '../components/UserTable.tsx';
+import { AddUserModal } from '../components/AddUserModal.tsx';
+import { User } from '../types.ts';
+import { PlusIcon } from '../components/icons.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
 
-interface EquipePageProps {
-    users: User[];
-    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-}
-
-export const EquipePage: React.FC<EquipePageProps> = ({ users, setUsers }) => {
+export const EquipePage: React.FC = () => {
     const { user: currentUser } = useAuth();
+    const { data, isLoading, saveUser, toggleUserStatus } = useApi();
+    const { users = [] } = data || {};
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
-
-    const handleSaveUser = (userData: Omit<User, 'id' | 'avatarUrl'> | User) => {
-        if ('id' in userData) { // Editing
-            setUsers(prev => prev.map(u => u.id === userData.id ? { ...u, ...userData } : u));
-        } else { // Adding
-            const newUser: User = {
-                ...userData,
-                id: `user-${Date.now()}`,
-                avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-                status: 'Ativo',
-            };
-            setUsers(prev => [newUser, ...prev]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    
+    const handleAction = async (action: Promise<any>) => {
+        setIsProcessing(true);
+        try {
+            await action;
+        } finally {
+            setIsProcessing(false);
         }
+    };
+
+
+    const handleSaveUser = async (userData: Omit<User, 'id' | 'avatarUrl'> | User) => {
+        await handleAction(saveUser(userData));
         setIsModalOpen(false);
         setEditingUser(null);
     };
 
-    const handleToggleStatus = (userId: string) => {
+    const handleToggleStatus = async (userId: string) => {
         const userToToggle = users.find(u => u.id === userId);
         if (!userToToggle) return;
 
         const action = userToToggle.status === 'Ativo' ? 'desativar' : 'reativar';
         if (window.confirm(`Tem certeza que deseja ${action} este usuário?`)) {
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: u.status === 'Ativo' ? 'Inativo' : 'Ativo' } : u));
+            await handleAction(toggleUserStatus(userId));
         }
     };
 
@@ -47,32 +49,48 @@ export const EquipePage: React.FC<EquipePageProps> = ({ users, setUsers }) => {
         setIsModalOpen(true);
     };
 
-    const openEditModal = (user: User) => {
-        setEditingUser(user);
+    const openEditModal = (userToEdit: User) => {
+        setEditingUser(userToEdit);
         setIsModalOpen(true);
     };
+    
+    const renderContent = () => {
+        if (isLoading) {
+            return <SkeletonLoader className="h-96" />;
+        }
+        
+        return (
+            <Card>
+                {isProcessing && (
+                    <div className="absolute inset-0 bg-slate-800/50 z-20 flex items-center justify-center rounded-xl">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                    </div>
+                )}
+                <UserTable 
+                    users={users} 
+                    onEdit={openEditModal} 
+                    onToggleStatus={handleToggleStatus} 
+                />
+            </Card>
+        );
+    }
 
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-white">Gestão de Equipe</h1>
+                <h1 className="text-2xl font-bold text-white">Gerenciamento da Equipe</h1>
                 {currentUser?.role === 'MAESTRO' && (
                     <button
                         onClick={openAddModal}
                         className="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
                     >
                         <PlusIcon className="w-5 h-5 mr-2" />
-                        Novo Usuário
+                        Adicionar Usuário
                     </button>
                 )}
             </div>
-            <Card>
-                <UserTable 
-                    users={users}
-                    onEdit={openEditModal}
-                    onToggleStatus={handleToggleStatus}
-                />
-            </Card>
+            {renderContent()}
+
             {isModalOpen && (
                 <AddUserModal
                     isOpen={isModalOpen}

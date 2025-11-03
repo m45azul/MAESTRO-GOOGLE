@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar } from '../components/Calendar';
-import { AppointmentList } from '../components/AppointmentList';
-// FIX: Import Task type to be used in the component props.
-import type { Appointment, User, Task } from '../types';
-import { PlusIcon } from '../components/icons';
-import { AddAppointmentModal } from '../components/AddAppointmentModal';
-import { Card } from '../components/Card';
 
-// FIX: Added a new component to display tasks for the selected day.
+import React, { useState, useMemo } from 'react';
+import { Calendar } from '../components/Calendar.tsx';
+import { AppointmentList } from '../components/AppointmentList.tsx';
+import { Appointment, Task } from '../types.ts';
+import { PlusIcon } from '../components/icons.tsx';
+import { AddAppointmentModal } from '../components/AddAppointmentModal.tsx';
+import { Card } from '../components/Card.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
+
 const priorityStyles = {
     'Crítica': 'bg-red-500/20 text-red-400 border-red-500/30',
     'Alta': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
@@ -47,19 +48,14 @@ const TaskListForDay: React.FC<{ tasks: Task[]; selectedDate: Date }> = ({ tasks
   );
 };
 
+export const AgendaPage: React.FC = () => {
+  const { data, isLoading, saveAppointment, deleteAppointment } = useApi();
+  const { appointments = [], users: allUsers = [], tasks = [], cases = [] } = data || {};
 
-interface AgendaPageProps {
-  appointments: Appointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
-  allUsers: User[];
-  // FIX: Added the 'tasks' prop to fix the TypeScript error in App.tsx.
-  tasks: Task[];
-}
-
-export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppointments, allUsers, tasks }) => {
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 26));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const eventDays = useMemo(() => {
     const dates = new Set<string>();
@@ -74,13 +70,11 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
       .sort((a, b) => a.time.localeCompare(b.time));
   }, [selectedDate, appointments]);
   
-  // FIX: Added a memoized selector to filter tasks for the selected day.
   const tasksForSelectedDay = useMemo(() => {
     return tasks.filter(task => {
         if (!task.dueDate || task.dueDate === 'N/A') return false;
         try {
             const [day, month, year] = task.dueDate.split('/').map(Number);
-            // JavaScript's Date month is 0-indexed, so we subtract 1.
             const taskDate = new Date(year, month - 1, day);
             return taskDate.toDateString() === selectedDate.toDateString();
         } catch (e) {
@@ -90,17 +84,23 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
     });
   }, [selectedDate, tasks]);
   
-  const handleSaveAppointment = (appointmentData: Omit<Appointment, 'id'> | Appointment) => {
-    if ('id' in appointmentData) { // Editing
-        setAppointments(prev => prev.map(a => a.id === appointmentData.id ? appointmentData : a));
-    } else { // Creating
-        setAppointments(prev => [...prev, { ...appointmentData, id: `app-${Date.now()}` }]);
-    }
+  const handleAction = async (action: Promise<any>) => {
+      setIsProcessing(true);
+      try {
+          await action;
+      } finally {
+          setIsProcessing(false);
+      }
   };
 
-  const handleDeleteAppointment = (appointmentId: string) => {
+  const handleSaveAppointment = async (appointmentData: Omit<Appointment, 'id'> | Appointment) => {
+    await handleAction(saveAppointment(appointmentData));
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
       if (window.confirm("Tem certeza que deseja excluir este compromisso?")) {
-          setAppointments(prev => prev.filter(a => a.id !== appointmentId));
+          await handleAction(deleteAppointment(appointmentId));
       }
   };
 
@@ -114,6 +114,17 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
       setIsModalOpen(true);
   };
 
+  if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+            <div className="lg:col-span-2"><SkeletonLoader className="h-full" /></div>
+            <div className="flex flex-col gap-8">
+                <SkeletonLoader className="h-1/2" />
+                <SkeletonLoader className="h-1/2" />
+            </div>
+        </div>
+      );
+  }
 
   return (
     <>
@@ -126,8 +137,12 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
             Novo Compromisso
         </button>
       </div>
-      {/* FIX: Updated layout to show both appointments and tasks lists on the right column. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full relative">
+         {isProcessing && (
+            <div className="absolute inset-0 bg-slate-900/50 z-20 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+            </div>
+        )}
         <div className="lg:col-span-2">
           <Calendar 
             selectedDate={selectedDate}
@@ -141,6 +156,7 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
                  <AppointmentList 
                     selectedDate={selectedDate} 
                     appointments={appointmentsForSelectedDay}
+                    cases={cases}
                     onEdit={openEditModal}
                     onDelete={handleDeleteAppointment}
                 />
@@ -158,6 +174,7 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ appointments, setAppoint
             appointment={editingAppointment}
             selectedDate={selectedDate}
             allUsers={allUsers}
+            cases={cases}
         />
       )}
     </>

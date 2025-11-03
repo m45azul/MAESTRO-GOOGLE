@@ -1,20 +1,22 @@
+
+
 import React, { useState } from 'react';
-import type { Lead } from '../types';
-import { userMap } from '../data/users';
-import { MoreVerticalIcon, EditIcon, TrashIcon, TagIcon } from './icons';
-import { TagBadge } from './TagBadge';
-import { tagMap } from '../data/tags';
+import { Lead } from '../types.ts';
+import { userMap, tagMap } from '../data/allData.ts';
+import { MoreVerticalIcon, EditIcon, TrashIcon, TagIcon } from './icons.tsx';
+import { TagBadge } from './TagBadge.tsx';
 
 interface KanbanCardProps {
   lead: Lead;
   onDragStart: (leadId: string) => void;
   onEdit: (lead: Lead) => void;
-  onDelete: (leadId: string) => void;
+  onDelete: (leadId: string) => Promise<void>;
   onConvert: (lead: Lead) => void;
 }
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({ lead, onDragStart, onEdit, onDelete, onConvert }) => {
   const owner = lead.responsibleId ? userMap.get(lead.responsibleId) : null;
+  const partner = lead.originPartnerId ? userMap.get(lead.originPartnerId) : null;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const leadTags = lead.tags.map(tagId => tagMap.get(tagId)).filter(Boolean);
 
@@ -39,13 +41,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ lead, onDragStart, onEdi
             {isMenuOpen && (
                 <div onMouseDown={e => e.stopPropagation()} className="absolute top-5 right-0 bg-slate-800 border border-slate-600 rounded-md shadow-lg z-10 w-32">
                     <button onClick={() => { onEdit(lead); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded-t-md"><EditIcon className="w-4 h-4 mr-2" /> Editar</button>
-                    <button onClick={() => { onDelete(lead.id); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-700 rounded-b-md"><TrashIcon className="w-4 h-4 mr-2" /> Excluir</button>
+                    <button onClick={async () => { await onDelete(lead.id); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-700 rounded-b-md"><TrashIcon className="w-4 h-4 mr-2" /> Excluir</button>
                 </div>
             )}
         </div>
       </div>
       <p className="text-xs text-slate-400 mt-1">{lead.company}</p>
-      <p className="text-xs text-slate-500 mt-1">Origem: {lead.origin}</p>
+      <p className="text-xs text-slate-500 mt-1">
+        Origem: {lead.origin} {partner && `(${partner.name})`}
+      </p>
 
       {leadTags.length > 0 && (
           <div className="mt-3 border-t border-slate-600/50 pt-2 flex flex-wrap gap-1">

@@ -1,6 +1,8 @@
+
+
 import React from 'react';
-import type { WorkflowNode as WorkflowNodeType, WorkflowModule } from '../types';
-import { CalendarIcon, ContractIcon, FinanceIcon, LegalIcon, MessageIcon, TaskIcon, WalletIcon } from './icons';
+import { WorkflowNode as WorkflowNodeType, WorkflowModule } from '../types.ts';
+import { CalendarIcon, ContractIcon, FinanceIcon, LegalIcon, MessageSquareIcon, TaskIcon, WalletIcon } from './icons.tsx';
 
 interface WorkflowNodeProps {
     node: WorkflowNodeType;
@@ -10,7 +12,7 @@ const ICONS: Record<WorkflowNodeType['iconName'], React.FC<React.SVGProps<SVGSVG
     Contract: ContractIcon,
     Legal: LegalIcon,
     Wallet: WalletIcon,
-    Message: MessageIcon,
+    Message: MessageSquareIcon,
     Calendar: CalendarIcon,
     Task: TaskIcon,
     Finance: FinanceIcon,

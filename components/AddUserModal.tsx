@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserRole } from '../types';
+import { User, UserRole } from '../types.ts';
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: Omit<User, 'id' | 'avatarUrl'> | User) => void;
+  onSave: (user: Omit<User, 'id' | 'avatarUrl'> | User) => Promise<void>;
   user: User | null;
 }
 
@@ -45,15 +45,14 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
     }
   }, [user, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const baseData = { name, email, role, status, oabNumber, cpf, phone };
     
     if (isEditing && user) {
-      onSave({ ...user, ...baseData });
+      await onSave({ ...user, ...baseData });
     } else {
-      const newUserData: Omit<User, 'id' | 'avatarUrl'> = baseData;
-      onSave(newUserData as Omit<User, 'id'>);
+      await onSave(baseData);
     }
     onClose();
   };

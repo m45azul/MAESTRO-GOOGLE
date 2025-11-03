@@ -1,12 +1,11 @@
-
 import React, { useState } from 'react';
-import type { LegalCase, TimeLog, User } from '../types';
-import { userMap } from '../data/users';
+import { LegalCase, TimeLog, User } from '../types.ts';
+import { userMap } from '../data/allData.ts';
 
 interface TimesheetTabProps {
     caseData: LegalCase;
-    onAddTimeLog: (caseId: string, timeLog: Omit<TimeLog, 'id' | 'status'>) => void;
-    onUpdateTimeLogStatus: (caseId: string, timeLogId: string, status: TimeLog['status']) => void;
+    onAddTimeLog: (caseId: string, timeLog: Omit<TimeLog, 'id' | 'status'>) => Promise<void>;
+    onUpdateTimeLogStatus: (caseId: string, timeLogId: string, status: TimeLog['status']) => Promise<void>;
     currentUser: User;
 }
 
@@ -24,10 +23,10 @@ export const TimesheetTab: React.FC<TimesheetTabProps> = ({ caseData, onAddTimeL
     const [description, setDescription] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (hours && description && date) {
-            onAddTimeLog(caseData.id, {
+            await onAddTimeLog(caseData.id, {
                 date,
                 hours: parseFloat(hours),
                 description,
@@ -67,8 +66,8 @@ export const TimesheetTab: React.FC<TimesheetTabProps> = ({ caseData, onAddTimeL
                                         <td className="px-4 py-3 text-right">
                                             {log.status === 'Pendente' && (
                                                 <div className="flex items-center justify-end space-x-2">
-                                                    <button onClick={() => onUpdateTimeLogStatus(caseData.id, log.id, 'Aprovado')} className="text-xs px-2 py-1 bg-green-600/50 text-green-300 rounded hover:bg-green-600/80">Aprovar</button>
-                                                    <button onClick={() => onUpdateTimeLogStatus(caseData.id, log.id, 'Rejeitado')} className="text-xs px-2 py-1 bg-red-600/50 text-red-300 rounded hover:bg-red-600/80">Rejeitar</button>
+                                                    <button onClick={async () => await onUpdateTimeLogStatus(caseData.id, log.id, 'Aprovado')} className="text-xs px-2 py-1 bg-green-600/50 text-green-300 rounded hover:bg-green-600/80">Aprovar</button>
+                                                    <button onClick={async () => await onUpdateTimeLogStatus(caseData.id, log.id, 'Rejeitado')} className="text-xs px-2 py-1 bg-red-600/50 text-red-300 rounded hover:bg-red-600/80">Rejeitar</button>
                                                 </div>
                                             )}
                                         </td>

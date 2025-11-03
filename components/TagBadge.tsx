@@ -1,5 +1,6 @@
+
 import React from 'react';
-import type { Tag } from '../types';
+import { Tag } from '../types.ts';
 
 interface TagBadgeProps {
   tag: Tag;

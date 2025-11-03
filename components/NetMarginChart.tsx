@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { Card } from './Card';
+import { Card } from './Card.tsx';
 
 const data = [
   { name: 'Jan', 'Margem': 28000 },

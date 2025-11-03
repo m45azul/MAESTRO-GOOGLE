@@ -1,18 +1,19 @@
 
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { Card } from '../Card';
 import { KpiCard } from '../KpiCard';
 import { TaskList } from '../TaskList';
-import { mockLeads } from '../../data/leads';
-import type { User, Task } from '../../types';
+import { User, Task, Lead } from '../../types.ts';
 
 interface SdrDashboardProps {
     user: User;
     tasks: Task[];
+    leads: Lead[];
 }
 
-export const SdrDashboard: React.FC<SdrDashboardProps> = ({ user, tasks }) => {
-    const myLeads = mockLeads.filter(l => l.responsibleId === user.id && !l.isDeleted);
+export const SdrDashboard: React.FC<SdrDashboardProps> = ({ user, tasks, leads }) => {
+    const myLeads = useMemo(() => leads.filter(l => l.responsibleId === user.id && !l.isDeleted), [leads, user.id]);
     
     const leadsInNegotiation = myLeads.filter(l => l.stage === 'Proposta' || l.stage === 'Negociação');
     const negotiationValue = leadsInNegotiation.reduce((sum, lead) => sum + lead.value, 0);

@@ -1,13 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { KpiCard } from '../KpiCard';
 import { LeadsByOriginChart } from '../LeadsByOriginChart';
 import { NetMarginChart } from '../NetMarginChart';
 import { TaskList } from '../TaskList';
 import { GeminiInsightCard } from '../GeminiInsightCard';
 import { Card } from '../Card';
-import { mockUsers } from '../../data/users';
-import type { Task } from '../../types';
+import { Task, User } from '../../types.ts';
 
 const getSuccessRateColor = (rate: number) => {
     if (rate >= 90) return 'text-green-400';
@@ -15,8 +13,8 @@ const getSuccessRateColor = (rate: number) => {
     return 'text-red-400';
 };
 
-const TeamPerformance: React.FC = () => {
-    const teamData = mockUsers
+const TeamPerformance: React.FC<{ users: User[] }> = ({ users }) => {
+    const teamData = useMemo(() => users
       .filter(u => u.role === 'Advogado Interno')
       .map(u => ({
           ...u,
@@ -24,7 +22,7 @@ const TeamPerformance: React.FC = () => {
           successRate: Math.floor(Math.random() * 20) + 80,
       }))
       .sort((a,b) => b.casesCompleted - a.casesCompleted)
-      .slice(0, 4);
+      .slice(0, 4), [users]);
 
     return (
         <Card className="h-full">
@@ -54,11 +52,12 @@ const TeamPerformance: React.FC = () => {
 
 interface MaestroDashboardProps {
     tasks: Task[];
+    users: User[];
 }
 
 type DashboardTab = 'geral' | 'comercial' | 'operacional';
 
-export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks }) => {
+export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks, users }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('geral');
 
   const kpiData = {
@@ -143,7 +142,7 @@ export const MaestroDashboard: React.FC<MaestroDashboardProps> = ({ tasks }) => 
                  <KpiCard title="Taxa de Sucesso (Geral)" value="91%" change="+1.5%" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TeamPerformance />
+                <TeamPerformance users={users} />
                 <TaskList tasks={tasks} />
             </div>
         </div>

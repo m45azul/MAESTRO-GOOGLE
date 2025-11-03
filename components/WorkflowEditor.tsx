@@ -1,115 +1,92 @@
+
+
 import React from 'react';
-import type { Workflow, WorkflowNode as WorkflowNodeType } from '../types';
-import { WorkflowNode } from './WorkflowNode';
+import { Workflow } from '../types.ts';
+import { WorkflowNode } from './WorkflowNode.tsx';
 
 const Connector: React.FC = () => (
     <div className="h-8 w-px bg-slate-600 mx-auto" />
 );
 
-const ConditionalConnector: React.FC = () => (
-    <div className="h-12 w-px bg-slate-600 mx-auto relative">
-        <div className="absolute top-1/2 -left-20 w-20 border-t border-slate-600">
-            <span className="absolute -top-2.5 left-2 text-xs text-slate-400 bg-slate-800 px-1">Sim</span>
-        </div>
-        <div className="absolute top-1/2 left-0 w-20 border-t border-slate-600">
-             <span className="absolute -top-2.5 right-2 text-xs text-slate-400 bg-slate-800 px-1">Não</span>
-        </div>
+const BranchContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <div className={`flex flex-col items-center w-full relative border border-slate-700/50 p-4 rounded-lg space-y-4 ${className}`}>
+        {children}
     </div>
-)
+);
+
+const BranchLabel: React.FC<{ text: string }> = ({ text }) => (
+    <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-800 px-2 z-10">
+        {text}
+    </div>
+);
 
 export const WorkflowEditor: React.FC<{ workflow: Workflow }> = ({ workflow }) => {
     
-    const renderNode = (node: WorkflowNodeType, index: number) => {
-        const nextNode = workflow.nodes[index + 1];
-        
-        if (node.type === 'condition' && node.condition) {
-            const thenNode = workflow.nodes.find(n => n.id === node.condition?.thenId);
-            const elseNode = workflow.nodes.find(n => n.id === node.condition?.elseId);
+    const nodeMap = React.useMemo(() => new Map(workflow.nodes.map(node => [node.id, node])), [workflow.nodes]);
 
-            return (
-                 <div key={node.id} className="flex flex-col items-center">
-                    <WorkflowNode node={node} />
-                    <div className="h-8 w-px bg-slate-600 mx-auto" />
-                    <div className="flex w-full justify-around">
-                        <div className="flex flex-col items-center w-1/2 relative">
-                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-800 px-2 z-10">SE SIM</div>
-                             <div className="w-px h-6 bg-slate-600" />
-                            {thenNode && <WorkflowNode node={thenNode} />}
-                        </div>
-                         <div className="flex flex-col items-center w-1/2 relative">
-                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-800 px-2 z-10">SE NÃO</div>
-                             <div className="w-px h-6 bg-slate-600" />
-                            {elseNode && (
-                                <>
-                                 <WorkflowNode node={elseNode} />
-                                 <Connector/>
-                                 <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-5')!} />
-                                  <Connector/>
-                                 <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-6')!} />
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )
-        }
-        
-        // Simple flow rendering
-        if(workflow.id === 'wf-1') {
-            return(
-                <div key={node.id} className="flex flex-col items-center">
-                    <WorkflowNode node={node} />
-                    {nextNode && <Connector />}
-                </div>
-            )
-        }
-
-        return null;
+    const renderLinearWorkflow = () => {
+        return workflow.nodes.map((node, index) => (
+            <React.Fragment key={node.id}>
+                <WorkflowNode node={node} />
+                {index < workflow.nodes.length - 1 && <Connector />}
+            </React.Fragment>
+        ));
     };
 
-    const renderWf2 = () => (
-         <div className="flex flex-col items-center">
-             <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-1')!} />
-             <Connector/>
-             <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-2')!} />
-             <div className="h-8 w-full flex justify-center items-center">
-                <div className="w-1/2 border-t border-slate-600 relative"><span className="absolute -top-2.5 left-2 text-xs text-slate-400 bg-slate-800 px-1">Sim</span></div>
-                <div className="w-1/2 border-t border-slate-600 relative"><span className="absolute -top-2.5 right-2 text-xs text-slate-400 bg-slate-800 px-1">Não</span></div>
-             </div>
-             <div className="flex w-full">
-                <div className="w-1/2 flex flex-col items-center">
-                    <div className="w-px h-4 bg-slate-600"/>
-                    <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-3')!} />
-                </div>
-                <div className="w-1/2 flex flex-col items-center">
-                    <div className="w-px h-4 bg-slate-600"/>
-                    <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-4')!} />
-                     <div className="h-8 w-full flex justify-center items-center">
-                        <div className="w-1/2 border-t border-slate-600 relative"><span className="absolute -top-2.5 left-2 text-xs text-slate-400 bg-slate-800 px-1">Sim</span></div>
-                        <div className="w-1/2 border-t border-slate-600 relative"><span className="absolute -top-2.5 right-2 text-xs text-slate-400 bg-slate-800 px-1">Não</span></div>
-                     </div>
-                     <div className="flex w-full">
-                        <div className="w-1/2 flex flex-col items-center">
-                            <div className="w-px h-4 bg-slate-600"/>
-                            <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-5')!} />
+    const renderBranchedWorkflow = () => {
+        const n1 = nodeMap.get('n2-1');
+        const n2 = nodeMap.get('n2-2');
+        const n3 = nodeMap.get('n2-3'); // then for n2
+        const n4 = nodeMap.get('n2-4'); // else for n2
+        const n5 = nodeMap.get('n2-5'); // then for n4
+        const n6 = nodeMap.get('n2-6'); // else for n4
+
+        if (!n1 || !n2 || !n3 || !n4 || !n5 || !n6) {
+            return <p>Os dados do fluxo de trabalho estão incompletos.</p>;
+        }
+
+        return (
+            <>
+                <WorkflowNode node={n1} />
+                <Connector />
+                <WorkflowNode node={n2} />
+                <Connector />
+                <div className="flex w-full justify-around items-stretch gap-4 self-stretch">
+                    {/* Branch for n2 -> then */}
+                    <BranchContainer className="w-1/2">
+                        <BranchLabel text="SE SIM (< R$5k)" />
+                        <WorkflowNode node={n3} />
+                    </BranchContainer>
+
+                    {/* Branch for n2 -> else */}
+                    <BranchContainer className="w-1/2">
+                        <BranchLabel text="SE NÃO" />
+                        <WorkflowNode node={n4} />
+                        <Connector />
+                        <div className="flex w-full justify-around items-stretch gap-2 self-stretch">
+                            {/* Branch for n4 -> then */}
+                            <BranchContainer>
+                                <BranchLabel text="SE SIM (< R$15k)" />
+                                <WorkflowNode node={n5} />
+                            </BranchContainer>
+                            {/* Branch for n4 -> else */}
+                            <BranchContainer>
+                                <BranchLabel text="SE NÃO" />
+                                <WorkflowNode node={n6} />
+                            </BranchContainer>
                         </div>
-                        <div className="w-1/2 flex flex-col items-center">
-                             <div className="w-px h-4 bg-slate-600"/>
-                            <WorkflowNode node={workflow.nodes.find(n => n.id === 'n2-6')!} />
-                        </div>
-                    </div>
+                    </BranchContainer>
                 </div>
-             </div>
-         </div>
-    )
+            </>
+        )
+    }
 
     return (
-        <div>
-            <h3 className="text-xl font-bold text-white mb-2">{workflow.name}</h3>
+        <div className="p-4">
+            <h2 className="text-xl font-bold text-white mb-2">{workflow.name}</h2>
             <p className="text-sm text-slate-400 mb-8">{workflow.description}</p>
-            <div className="px-4">
-                {workflow.id === 'wf-1' && workflow.nodes.map((node, index) => renderNode(node, index))}
-                {workflow.id === 'wf-2' && renderWf2()}
+            <div className="flex flex-col items-center">
+                {workflow.id === 'wf-2' ? renderBranchedWorkflow() : renderLinearWorkflow()}
             </div>
         </div>
     );

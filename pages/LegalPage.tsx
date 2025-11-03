@@ -1,128 +1,103 @@
-import React, { useState, useMemo } from 'react';
-import type { LegalCase, TimeLog, User } from '../types';
-import { CaseList } from '../components/CaseList';
-import { CaseDetails } from '../components/CaseDetails';
-import { useAuth } from '../context/AuthContext';
-import { mockClients } from '../data/clients';
-import { AddCaseModal } from '../components/AddCaseModal';
 
-interface LegalPageProps {
-    cases: LegalCase[];
-    setCases: React.Dispatch<React.SetStateAction<LegalCase[]>>;
-    allUsers: User[];
-}
+import React, { useState, useMemo, useEffect } from 'react';
+import { LegalCase, TimeLog, Document } from '../types.ts';
+import { CaseList } from '../components/CaseList.tsx';
+import { CaseDetails } from '../components/CaseDetails.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { AddCaseModal } from '../components/AddCaseModal.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
+import { Card } from '../components/Card.tsx';
 
-export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases, allUsers }) => {
+type CaseStatusFilter = LegalCase['status'] | 'Todos';
+
+export const LegalPage: React.FC = () => {
     const { user } = useAuth();
-    const [selectedCaseId, setSelectedCaseId] = useState<string | null>(cases.find(c => !c.isDeleted)?.id || null);
+    const { data, isLoading, saveCase, archiveCase, addCaseUpdate, addTimeLog, updateTimeLogStatus, syncCaseWithCourt, uploadDocument, analyzeDocument } = useApi();
+    const { cases = [], users: allUsers = [], clients = [], tags = [] } = data || {};
+
+    const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<CaseStatusFilter>('Ativo');
+    const [responsibleFilter, setResponsibleFilter] = useState<string>('all');
+    const [tagsFilter, setTagsFilter] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCase, setEditingCase] = useState<LegalCase | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c])), [clients]);
+    const lawyers = useMemo(() => allUsers.filter(u => u.role.includes('Advogado') || u.role === 'Controller'), [allUsers]);
+    const caseTags = useMemo(() => tags.filter(t => t.category === 'area_atuacao' || t.category === 'prioridade'), [tags]);
 
     const activeCases = useMemo(() => cases.filter(c => !c.isDeleted), [cases]);
 
     const filteredCases = useMemo(() => {
         return activeCases.filter(c => {
-            const clientName = mockClients.find(client => client.id === c.clientId)?.name || '';
-            return searchTerm === '' ||
-                c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                c.processNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                clientName.toLowerCase().includes(searchTerm.toLowerCase());
+            const statusMatch = statusFilter === 'Todos' || c.status === statusFilter;
+            const responsibleMatch = responsibleFilter === 'all' || c.responsibleId === responsibleFilter;
+            const tagsMatch = tagsFilter.length === 0 || tagsFilter.every(tagId => c.tags.includes(tagId));
+            
+            if (!statusMatch || !responsibleMatch || !tagsMatch) return false;
+
+            if (!searchTerm.trim()) return true;
+            
+            const lowercasedSearchTerm = searchTerm.toLowerCase();
+            const clientName = clientMap.get(c.clientId)?.name || '';
+            return (
+                c.title.toLowerCase().includes(lowercasedSearchTerm) ||
+                c.processNumber.toLowerCase().includes(lowercasedSearchTerm) ||
+                (c.internalNumber && c.internalNumber.toLowerCase().includes(lowercasedSearchTerm)) ||
+                clientName.toLowerCase().includes(lowercasedSearchTerm)
+            );
         });
-    }, [activeCases, searchTerm]);
+    }, [activeCases, searchTerm, statusFilter, clientMap, responsibleFilter, tagsFilter]);
+    
+    // Effect to manage the selected case ID.
+    // It selects the first case initially, and also resets the selection
+    // if the current one is filtered out.
+    useEffect(() => {
+        const isSelectedCaseInList = filteredCases.some(c => c.id === selectedCaseId);
+        
+        if (filteredCases.length > 0 && !isSelectedCaseInList) {
+            setSelectedCaseId(filteredCases[0].id);
+        } else if (filteredCases.length === 0) {
+            setSelectedCaseId(null);
+        }
+    }, [filteredCases, selectedCaseId]);
 
     const selectedCase = useMemo(() => {
+        // This is now a pure lookup based on the ID.
         return cases.find(c => c.id === selectedCaseId);
     }, [cases, selectedCaseId]);
 
-    const handleAddUpdate = (caseId: string, description: string) => {
-        if(!user) return;
-        setCases(prevCases => prevCases.map(c => {
-            if (c.id === caseId) {
-                const newUpdate = {
-                    id: `u${caseId}-${c.updates.length + 1}`,
-                    date: new Date().toISOString().split('T')[0],
-                    author: user.name,
-                    description: description,
-                };
-                return { ...c, updates: [...c.updates, newUpdate] };
-            }
-            return c;
-        }));
-    };
 
-    const handleAddTimeLog = (caseId: string, timeLogData: Omit<TimeLog, 'id' | 'status'>) => {
-        setCases(prevCases => prevCases.map(c => {
-            if (c.id === caseId) {
-                const newTimeLog: TimeLog = {
-                    ...timeLogData,
-                    id: `tl-${caseId}-${c.timesheet.length + 1}`,
-                    status: 'Pendente',
-                };
-                return { ...c, timesheet: [...c.timesheet, newTimeLog] };
-            }
-            return c;
-        }));
+    const handleAction = async (action: Promise<any>) => {
+        setIsProcessing(true);
+        try {
+            await action;
+        } catch (error) {
+            console.error("Action failed:", error);
+        } finally {
+            setIsProcessing(false);
+        }
     };
     
-    const handleUpdateTimeLogStatus = (caseId: string, timeLogId: string, status: TimeLog['status']) => {
-        setCases(prevCases => prevCases.map(c => {
-            if (c.id === caseId) {
-                return { 
-                    ...c, 
-                    timesheet: c.timesheet.map(tl => tl.id === timeLogId ? {...tl, status} : tl)
-                };
-            }
-            return c;
-        }));
-    };
-    
-    const handleReassignCase = (caseId: string, newResponsibleId: string, reason: string) => {
-      if(!user) return;
-      setCases(prevCases => prevCases.map(c => {
-        if (c.id === caseId) {
-          const newResponsible = allUsers.find(u => u.id === newResponsibleId);
-          const oldResponsible = allUsers.find(u => u.id === c.responsibleId);
-          const updateDescription = `Processo reatribuído de ${oldResponsible?.name || 'N/A'} para ${newResponsible?.name || 'N/A'}. Motivo: ${reason}`;
-          const newUpdate = {
-              id: `u${caseId}-${c.updates.length + 1}`,
-              date: new Date().toISOString().split('T')[0],
-              author: user.name,
-              description: updateDescription,
-          };
-          return { ...c, responsibleId: newResponsibleId, updates: [...c.updates, newUpdate] };
-        }
-        return c;
-      }));
-    };
-
-    const handleSaveCase = (caseData: Omit<LegalCase, 'id' | 'status' | 'updates'> & { id?: string }) => {
-        if(editingCase) { // Update
-            setCases(prev => prev.map(c => c.id === editingCase.id ? { ...c, ...caseData } : c));
-        } else { // Create
-             const newCase: LegalCase = {
-                ...caseData,
-                id: `case-${Date.now()}`,
-                status: 'Ativo',
-                updates: [{
-                    id: 'update-1', date: new Date().toISOString().split('T')[0],
-                    author: 'Sistema', description: 'Processo criado no sistema.'
-                }]
-            };
-            setCases(prev => [newCase, ...prev]);
-        }
+    const handleSaveCase = async (caseData: Omit<LegalCase, 'id'> & { id?: string }) => {
+        await handleAction(saveCase(caseData));
         setEditingCase(null);
+        setIsModalOpen(false);
     };
 
-    const handleArchiveCase = (caseId: string) => {
+    const handleArchiveCase = async (caseId: string) => {
         if(window.confirm("Tem certeza que deseja arquivar este processo?")) {
-            setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'Arquivado' } : c));
+            await handleAction(archiveCase(caseId));
             if (selectedCaseId === caseId) {
-                setSelectedCaseId(activeCases.length > 1 ? activeCases.find(c => c.id !== caseId)?.id || null : null);
+                const newCaseToSelect = cases.find(c => c.id !== caseId && c.status === 'Ativo');
+                setSelectedCaseId(newCaseToSelect?.id || null);
             }
         }
     };
-    
+
     const openAddModal = () => {
         setEditingCase(null);
         setIsModalOpen(true);
@@ -133,12 +108,19 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases, allUsers 
         setIsModalOpen(true);
     };
     
-    const lawyers = useMemo(() => allUsers.filter(u => u.role === 'Advogado Interno' || u.role === 'Controller' || u.role === 'Advogado Parceiro'), [allUsers]);
-
+    if (isLoading) {
+        return (
+            <div className="flex flex-col lg:flex-row h-full max-h-[calc(100vh-8rem)] gap-4">
+                <SkeletonLoader className="w-full lg:w-2/5 xl:w-1/3 h-full" />
+                <SkeletonLoader className="w-full lg:w-3/5 xl:w-2/3 h-full" />
+            </div>
+        );
+    }
+    
     return (
         <>
-            <div className="flex h-[calc(100vh-8rem)]">
-                <div className="w-2/5 xl:w-1/3 border-r border-slate-700/50 pr-4 flex flex-col">
+            <div className="flex flex-col lg:flex-row h-full max-h-[calc(100vh-8rem)] gap-4">
+                <div className="w-full lg:w-2/5 xl:w-1/3 h-1/2 lg:h-full flex flex-col">
                     <CaseList
                         cases={filteredCases}
                         selectedCaseId={selectedCaseId}
@@ -146,19 +128,41 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases, allUsers 
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
                         onAddCaseClick={openAddModal}
+                        statusFilter={statusFilter}
+                        onStatusFilterChange={setStatusFilter}
+                        clientMap={clientMap}
+                        responsibleFilter={responsibleFilter}
+                        onResponsibleFilterChange={setResponsibleFilter}
+                        tagsFilter={tagsFilter}
+                        onTagsFilterChange={setTagsFilter}
+                        allLawyers={lawyers}
+                        allTags={caseTags}
                     />
                 </div>
-                <div className="w-3/5 xl:w-2/3 pl-4">
-                    <CaseDetails 
-                        caseData={selectedCase} 
-                        onAddUpdate={handleAddUpdate}
-                        onEdit={openEditModal}
-                        onArchive={handleArchiveCase}
-                        onAddTimeLog={handleAddTimeLog}
-                        onUpdateTimeLogStatus={handleUpdateTimeLogStatus}
-                        onReassign={handleReassignCase}
-                        allUsers={allUsers}
-                    />
+                <div className="w-full lg:w-3/5 xl:w-2/3 h-1/2 lg:h-full relative">
+                     {isProcessing && (
+                        <div className="absolute inset-0 bg-slate-900/50 z-20 flex items-center justify-center rounded-xl">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                        </div>
+                    )}
+                    {filteredCases.length === 0 && !isLoading ? (
+                         <Card className="h-full flex items-center justify-center text-slate-500">Nenhum processo encontrado para os filtros selecionados.</Card>
+                    ) : (
+                        <CaseDetails 
+                            caseData={selectedCase} 
+                            onAddUpdate={(caseId, authorId, desc) => handleAction(addCaseUpdate(caseId, authorId, desc))}
+                            onEdit={openEditModal}
+                            onArchive={handleArchiveCase}
+                            onAddTimeLog={(caseId, log) => handleAction(addTimeLog(caseId, log))}
+                            onUpdateTimeLogStatus={(caseId, logId, status) => handleAction(updateTimeLogStatus(caseId, logId, status))}
+                            onReassign={() => {}} 
+                            allUsers={allUsers}
+                            clientMap={clientMap}
+                            onSyncCaseWithCourt={(caseId) => handleAction(syncCaseWithCourt(caseId))}
+                            onUploadDocument={(caseId, file) => uploadDocument(caseId, file)}
+                            onAnalyzeDocument={(caseId, docId) => handleAction(analyzeDocument(caseId, docId))}
+                        />
+                    )}
                 </div>
             </div>
             {isModalOpen && (
@@ -167,7 +171,8 @@ export const LegalPage: React.FC<LegalPageProps> = ({ cases, setCases, allUsers 
                     onClose={() => setIsModalOpen(false)}
                     onSaveCase={handleSaveCase}
                     lawyers={lawyers}
-                    clients={mockClients}
+                    clients={clients}
+                    tags={tags}
                     caseData={editingCase}
                 />
             )}

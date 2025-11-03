@@ -1,17 +1,18 @@
-
 import React, { useState, useEffect } from 'react';
-import type { LegalCase, User, Client } from '../types';
+import { LegalCase, User, Client, Tag } from '../types.ts';
+import { TagFilter } from './TagFilter.tsx';
 
 interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveCase: (caseData: Omit<LegalCase, 'id' | 'status' | 'updates'> & { id?: string }) => void;
+  onSaveCase: (caseData: Omit<LegalCase, 'id'> & { id?: string }) => Promise<void>;
   lawyers: User[];
   clients: Client[];
+  tags: Tag[];
   caseData: LegalCase | null;
 }
 
-export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSaveCase, lawyers, clients, caseData }) => {
+export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSaveCase, lawyers, clients, tags: allTags, caseData }) => {
     const [title, setTitle] = useState('');
     const [processNumber, setProcessNumber] = useState('');
     const [clientId, setClientId] = useState('');
@@ -19,13 +20,11 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
     const [opposingParty, setOpposingParty] = useState('');
     const [court, setCourt] = useState('');
     const [valorCausa, setValorCausa] = useState('');
-    
-    // Mock values from LegalCase that are not in the form
-    const [honorariosPrevistos, setHonorariosPrevistos] = useState(0);
-    const [percentualAdvogado, setPercentualAdvogado] = useState(30);
     const [tags, setTags] = useState<string[]>([]);
-
+    
     const isEditing = !!caseData;
+
+    const caseTags = allTags.filter(t => t.category === 'area_atuacao' || t.category === 'prioridade');
 
     useEffect(() => {
         if (isOpen && caseData) {
@@ -36,8 +35,6 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
             setOpposingParty(caseData.opposingParty);
             setCourt(caseData.court);
             setValorCausa(String(caseData.valorCausa));
-            setHonorariosPrevistos(caseData.honorariosPrevistos);
-            setPercentualAdvogado(caseData.percentualAdvogado);
             setTags(caseData.tags);
         } else {
             setTitle('');
@@ -47,20 +44,17 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
             setOpposingParty('');
             setCourt('');
             setValorCausa('');
-            setHonorariosPrevistos(0);
-            setPercentualAdvogado(30);
             setTags([]);
         }
     }, [caseData, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientId || !responsibleId) {
         alert("Por favor, selecione um cliente e um advogado responsável.");
         return;
     }
-    onSaveCase({
-        id: caseData?.id,
+    const saveData = {
         title,
         processNumber,
         clientId,
@@ -69,10 +63,18 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
         court,
         valorCausa: parseFloat(valorCausa) || 0,
         tags,
-        honorariosPrevistos,
-        percentualAdvogado,
+        // Mantendo os valores existentes ou padrões para os campos não editáveis no formulário
+        status: caseData?.status || 'Ativo',
+        updates: caseData?.updates || [],
         timesheet: caseData?.timesheet || [],
-    });
+        honorariosPrevistos: caseData?.honorariosPrevistos || (parseFloat(valorCausa) * 0.3),
+        percentualAdvogado: caseData?.percentualAdvogado || 30,
+        documents: caseData?.documents || [],
+        tribunal: caseData?.tribunal || 'A Definir',
+        complexidade: caseData?.complexidade || 'Simples',
+    };
+
+    await onSaveCase(isEditing ? { ...caseData, ...saveData } : saveData);
     onClose();
   };
 
@@ -121,6 +123,14 @@ export const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onS
                 <option value="" disabled>Selecione um advogado</option>
                 {lawyers.map(lawyer => <option key={lawyer.id} value={lawyer.id}>{lawyer.name}</option>)}
               </select>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Tags do Processo</label>
+                <TagFilter 
+                    selectedTags={tags} 
+                    onTagFilterChange={setTags} 
+                    allTags={caseTags}
+                />
             </div>
           </div>
           <div className="mt-8 flex justify-end space-x-4">

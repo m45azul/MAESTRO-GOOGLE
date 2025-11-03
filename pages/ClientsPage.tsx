@@ -1,39 +1,73 @@
+import React, { useState, useMemo } from 'react';
+import { Card } from '../components/Card.tsx';
+import { Client } from '../types.ts';
+import { ClientList } from '../components/ClientList.tsx';
+import { ClientDetails } from '../components/ClientDetails.tsx';
+import { AddClientModal } from '../components/AddClientModal.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
 
-import React, { useState } from 'react';
-import { Card } from '../components/Card';
-import { Client, LegalCase } from '../types';
-import { ClientList } from '../components/ClientList';
-import { ClientDetails } from '../components/ClientDetails';
-import { AddClientModal } from '../components/AddClientModal';
-
-interface ClientsPageProps {
-    clients: Client[];
-    setClients: React.Dispatch<React.SetStateAction<Client[]>>;
-    cases: LegalCase[];
-}
-
-export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, setClients, cases }) => {
-    const [selectedClientId, setSelectedClientId] = useState<string | null>(clients.length > 0 ? clients[0].id : null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-    const activeClients = React.useMemo(() => clients.filter(c => !c.isDeleted), [clients]);
+export const ClientsPage: React.FC = () => {
+    const { user } = useAuth();
+    const { data, isLoading, addClientNote, editClientNote, deleteClientNote } = useApi();
+    const { clients = [], cases = [] } = data || {};
     
-    const selectedClient = React.useMemo(() => {
+    const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const activeClients = useMemo(() => clients.filter(c => !c.isDeleted), [clients]);
+    
+     // Effect to set initial selected client
+    React.useEffect(() => {
+        if (!selectedClientId && activeClients.length > 0) {
+            setSelectedClientId(activeClients[0].id);
+        }
+    }, [activeClients, selectedClientId]);
+
+    const selectedClient = useMemo(() => {
         return clients.find(c => c.id === selectedClientId);
     }, [clients, selectedClientId]);
 
-    const handleSaveClient = (clientData: Client) => {
-        setClients(prev => prev.map(c => c.id === clientData.id ? clientData : c));
+    const handleSaveClient = async (clientData: Client) => {
+        // This should be an API call in a real app - not implemented in ApiContext yet
+        console.log("Save client not implemented via API yet", clientData);
         setIsEditModalOpen(false);
     };
 
     const handleDeactivateClient = (clientId: string) => {
         if (window.confirm("Tem certeza que deseja desativar este cliente?")) {
-            setClients(prev => prev.map(c => c.id === clientId ? { ...c, isDeleted: true } : c));
+            // This should be an API call - not implemented in ApiContext yet
+            console.log("Deactivate client not implemented via API yet");
             if(selectedClientId === clientId) {
                 setSelectedClientId(activeClients.length > 1 ? activeClients.find(c => c.id !== clientId)?.id || null : null);
             }
         }
+    };
+    
+    const handleAction = async (action: Promise<any>) => {
+        setIsProcessing(true);
+        try {
+            await action;
+        } catch (error) {
+            console.error("Client action failed:", error);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleAddNote = async (clientId: string, content: string) => {
+        if (!user) return;
+        await handleAction(addClientNote(clientId, user.id, content));
+    };
+
+    const handleEditNote = async (clientId: string, noteId: string, content: string) => {
+        await handleAction(editClientNote(clientId, noteId, content));
+    };
+    
+    const handleDeleteNote = async (clientId: string, noteId: string) => {
+        await handleAction(deleteClientNote(clientId, noteId));
     };
     
     const openEditModal = () => {
@@ -41,6 +75,15 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, setClients, c
             setIsEditModalOpen(true);
         }
     };
+
+    if (isLoading) {
+        return (
+             <div className="flex h-[calc(100vh-8rem)] gap-6">
+                <SkeletonLoader className="w-1/3 h-full" />
+                <SkeletonLoader className="w-2/3 h-full" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -52,12 +95,20 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, setClients, c
                         onSelectClient={setSelectedClientId}
                     />
                 </div>
-                <div className="w-2/3 h-full">
+                <div className="w-2/3 h-full relative">
+                    {isProcessing && (
+                        <div className="absolute inset-0 bg-slate-900/50 z-20 flex items-center justify-center rounded-xl">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                        </div>
+                    )}
                     <ClientDetails 
                         client={selectedClient}
                         cases={cases.filter(c => c.clientId === selectedClientId)}
                         onEdit={openEditModal}
                         onDeactivate={handleDeactivateClient}
+                        onAddNote={handleAddNote}
+                        onEditNote={handleEditNote}
+                        onDeleteNote={handleDeleteNote}
                     />
                 </div>
             </div>

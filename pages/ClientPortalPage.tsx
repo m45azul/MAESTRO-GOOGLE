@@ -1,10 +1,9 @@
-
 import React from 'react';
-import { Card } from '../components/Card';
-import { mockCases } from '../data/cases';
-import { clientMap } from '../data/clients';
-import { LegalCase, CaseUpdate } from '../types';
-import { FileTextIcon } from '../components/icons';
+import { Card } from '../components/Card.tsx';
+import { LegalCase, CaseUpdate, Client } from '../types.ts';
+import { FileTextIcon } from '../components/icons.tsx';
+import { useApi } from '../context/ApiContext.tsx';
+import { SkeletonLoader } from '../components/skeletons/SkeletonLoader.tsx';
 
 // Mock client ID for simulation
 const MOCK_CLIENT_ID = 'client-1';
@@ -55,13 +54,25 @@ const ClientCaseTimeline: React.FC<{ caseData: LegalCase }> = ({ caseData }) => 
     );
 };
 
-
 export const ClientPortalPage: React.FC = () => {
-    const client = clientMap.get(MOCK_CLIENT_ID);
-    const clientCases = mockCases.filter(c => c.clientId === MOCK_CLIENT_ID && !c.isDeleted);
+    const { data, isLoading } = useApi();
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6 md:space-y-8">
+                <SkeletonLoader className="h-28" />
+                <SkeletonLoader className="h-80" />
+            </div>
+        );
+    }
+
+    const { cases = [], clients = [] } = data || {};
+
+    const client = clients.find(c => c.id === MOCK_CLIENT_ID);
+    const clientCases = cases.filter(c => c.clientId === MOCK_CLIENT_ID && !c.isDeleted);
 
     if (!client) {
-        return <Card>Cliente não encontrado.</Card>;
+        return <Card><p className="text-center text-slate-500 py-8">Cliente de simulação não encontrado.</p></Card>;
     }
 
     return (

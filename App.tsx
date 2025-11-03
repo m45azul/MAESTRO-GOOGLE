@@ -1,132 +1,101 @@
 
-import React, { useState } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
-import { Dashboard } from './components/Dashboard';
-import { useAuth } from './context/AuthContext';
-import { LoginPage } from './pages/LoginPage';
-import { CrmPage } from './pages/CrmPage';
-import { AgendaPage } from './pages/AgendaPage';
-import { LegalPage } from './pages/LegalPage';
-import { FinancePage } from './pages/FinancePage';
-import { CarteiraPage } from './pages/CarteiraPage';
-import { ClientsPage } from './pages/ClientsPage';
-import { ClientPortalPage } from './pages/ClientPortalPage';
-import { SocioPage } from './pages/SocioPage';
-import { EquipePage } from './pages/EquipePage';
-import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
-import { WorkflowPage } from './pages/WorkflowPage';
-import { MuralPage } from './pages/MuralPage';
-import { ChatPage } from './pages/ChatPage';
-import { BonusPage } from './pages/BonusPage';
-import { Chatbot } from './components/Chatbot';
-import { mockLeads } from './data/leads';
-import { mockCases } from './data/cases';
-import { mockClients } from './data/clients';
-import { mockTransactions } from './data/transactions';
-import { mockAppointments } from './data/appointments';
-import { mockMuralPosts } from './data/mural';
-import { mockChatMessages, mockChatConversations } from './data/chat';
-import { mockUsers } from './data/users';
-import { mockTasks } from './data/tasks';
-import type { Lead, LegalCase, Client, Transaction, Contract, Appointment, MuralPost, ChatConversation, User, ChatMessage, Task } from './types';
+import React, { useState, useEffect } from 'react';
+import { Sidebar } from './components/Sidebar.tsx';
+import { Header } from './components/Header.tsx';
+import { Dashboard } from './components/Dashboard.tsx';
+import { useAuth } from './context/AuthContext.tsx';
+import { LoginPage } from './pages/LoginPage.tsx';
+import { CrmPage } from './pages/CrmPage.tsx';
+import { AgendaPage } from './pages/AgendaPage.tsx';
+import { LegalPage } from './pages/LegalPage.tsx';
+import { FinancePage } from './pages/FinancePage.tsx';
+import { CarteiraPage } from './pages/CarteiraPage.tsx';
+import { ClientsPage } from './pages/ClientsPage.tsx';
+import { ClientPortalPage } from './pages/ClientPortalPage.tsx';
+import { SocioPage } from './pages/SocioPage.tsx';
+import { EquipePage } from './pages/EquipePage.tsx';
+import { ConfiguracoesPage } from './pages/ConfiguracoesPage.tsx';
+import { WorkflowPage } from './pages/WorkflowPage.tsx';
+import { MuralPage } from './pages/MuralPage.tsx';
+import { ChatPage } from './pages/ChatPage.tsx';
+import { BonusPage } from './pages/BonusPage.tsx';
+import { BiPage } from './pages/BiPage.tsx';
+import { AtendimentoPage } from './pages/AtendimentoPage.tsx';
+import { Chatbot } from './components/Chatbot.tsx';
+import { ApiProvider } from './context/ApiContext.tsx';
+import { NotificationProvider } from './context/NotificationContext.tsx';
 
+const routes: { [key: string]: { component: React.FC<any>; title: string; } } = {
+    '/': { component: Dashboard, title: 'Dashboard' },
+    '/agenda': { component: AgendaPage, title: 'Agenda' },
+    '/mural': { component: MuralPage, title: 'Mural da Equipe' },
+    '/chat': { component: ChatPage, title: 'Chat Interno' },
+    '/crm': { component: CrmPage, title: 'CRM / Comercial' },
+    '/clientes': { component: ClientsPage, title: 'Gestão de Clientes' },
+    '/juridico': { component: LegalPage, title: 'Gestão de Processos' },
+    '/financeiro': { component: FinancePage, title: 'Financeiro' },
+    '/atendimento': { component: AtendimentoPage, title: 'Atendimento ao Cliente' },
+    '/bonus': { component: BonusPage, title: 'Bônus e Prêmios' },
+    '/carteira': { component: CarteiraPage, title: 'Minha Carteira' },
+    '/bi': { component: BiPage, title: 'Business Intelligence' },
+    '/societario': { component: SocioPage, title: 'Societário' },
+    '/workflow': { component: WorkflowPage, title: 'Automação de Workflows' },
+    '/equipe': { component: EquipePage, title: 'Gestão de Equipe' },
+    '/portal-cliente': { component: ClientPortalPage, title: 'Portal do Cliente (Simulação)' },
+    '/configuracoes': { component: ConfiguracoesPage, title: 'Configurações' },
+};
+
+const getRouteFromHash = () => window.location.hash.substring(1) || '/';
 
 const DashboardLayout: React.FC = () => {
-    const { user } = useAuth();
-    const [route, setRoute] = useState('/');
-    
-    // Lift state up to manage data across modules
-    const [leads, setLeads] = useState<Lead[]>(mockLeads);
-    const [cases, setCases] = useState<LegalCase[]>(mockCases);
-    const [clients, setClients] = useState<Client[]>(mockClients);
-    const [contracts, setContracts] = useState<Contract[]>([]);
-    const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
-    const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-    const [tasks, setTasks] = useState<Task[]>(mockTasks);
-    const [muralPosts, setMuralPosts] = useState<MuralPost[]>(mockMuralPosts);
-    const [chatConversations, setChatConversations] = useState<ChatConversation[]>(mockChatConversations);
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
-    const [users, setUsers] = useState<User[]>(mockUsers);
+    const [route, setRoute] = useState(getRouteFromHash());
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-
-    if (!user) return <LoginPage />;
-
-    const renderContent = () => {
-        switch (route) {
-            case '/crm':
-                return <CrmPage leads={leads} setLeads={setLeads} setClients={setClients} setContracts={setContracts} setCases={setCases} allUsers={users} />;
-            case '/agenda':
-                return <AgendaPage appointments={appointments} setAppointments={setAppointments} allUsers={users} tasks={tasks} />;
-            case '/juridico':
-                return <LegalPage cases={cases} setCases={setCases} allUsers={users} />;
-            case '/financeiro':
-                return <FinancePage transactions={transactions} setTransactions={setTransactions} />;
-            case '/carteira':
-                return <CarteiraPage />;
-            case '/clientes':
-                return <ClientsPage clients={clients} setClients={setClients} cases={cases} />;
-            case '/portal-cliente':
-                return <ClientPortalPage />;
-            case '/societario':
-                return <SocioPage />;
-            case '/equipe':
-                return <EquipePage users={users} setUsers={setUsers} />;
-            case '/mural':
-                return <MuralPage posts={muralPosts} setPosts={setMuralPosts} />;
-            case '/chat':
-                return <ChatPage messages={chatMessages} setMessages={setChatMessages} conversations={chatConversations} setConversations={setChatConversations} allUsers={users} />;
-            case '/bonus':
-                return <BonusPage />;
-            case '/workflow':
-                return <WorkflowPage />;
-            case '/configuracoes':
-                return <ConfiguracoesPage />;
-            case '/':
-            default:
-                return <Dashboard user={user} tasks={tasks} />;
+    useEffect(() => {
+        const handleHashChange = () => {
+            setRoute(getRouteFromHash());
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        // Set initial route
+        if (window.location.hash === '') {
+            window.location.hash = '#/';
+        } else {
+            handleHashChange();
         }
-    };
-    
-    const getTitle = () => {
-        switch(route) {
-            case '/crm': return 'CRM / Comercial';
-            case '/agenda': return 'Agenda';
-            case '/juridico': return 'Jurídico';
-            case '/financeiro': return 'Financeiro';
-            case '/carteira': return 'Minha Carteira';
-            case '/clientes': return 'Clientes';
-            case '/portal-cliente': return 'Portal do Cliente';
-            case '/societario': return 'Societário';
-            case '/equipe': return 'Equipe';
-            case '/mural': return 'Mural';
-            case '/chat': return 'Chat Interno';
-            case '/bonus': return 'Bônus e Prêmios';
-            case '/workflow': return 'Workflow Engine';
-            case '/configuracoes': return 'Configurações';
-            case '/':
-            default: return 'Dashboard';
-        }
-    }
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+
+    const CurrentPage = routes[route]?.component || Dashboard;
+    const title = routes[route]?.title || 'Dashboard';
 
     return (
-        <div className="flex h-screen bg-slate-900 text-slate-200 font-sans">
-            <Sidebar currentRoute={route} setRoute={setRoute} />
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header title={getTitle()} />
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-900 p-4 md:p-8">
-                    {renderContent()}
+        <div className="flex h-screen bg-slate-900 text-slate-200">
+            <Sidebar currentRoute={route} setIsOpen={setIsSidebarOpen} isOpen={isSidebarOpen} />
+            <div className={`flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
+                <Header title={title} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                    <CurrentPage />
                 </main>
             </div>
             <Chatbot />
         </div>
-    )
-}
+    );
+};
 
 const App: React.FC = () => {
-  const { isLoggedIn } = useAuth();
-  
-  return isLoggedIn ? <DashboardLayout /> : <LoginPage />;
+    const { isLoggedIn } = useAuth();
+
+    if (!isLoggedIn) {
+        return <LoginPage />;
+    }
+
+    return (
+        <NotificationProvider>
+            <ApiProvider>
+                <DashboardLayout />
+            </ApiProvider>
+        </NotificationProvider>
+    );
 };
 
 export default App;

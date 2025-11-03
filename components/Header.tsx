@@ -1,11 +1,14 @@
+
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.tsx';
+import { MenuIcon } from './icons.tsx';
 
 interface HeaderProps {
   title: string;
+  onMenuClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title }) => {
+export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
   const { user } = useAuth();
 
   if (!user) {
@@ -14,7 +17,12 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
 
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-8 bg-slate-800/50 border-b border-slate-700/50 flex-shrink-0">
-      <h1 className="text-xl font-semibold text-white">{title}</h1>
+      <div className="flex items-center">
+          <button onClick={onMenuClick} className="md:hidden mr-4 text-slate-400 hover:text-white">
+              <MenuIcon className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-semibold text-white">{title}</h1>
+      </div>
       <div className="flex items-center space-x-4">
         <div className="text-right hidden sm:block">
           <p className="font-semibold text-white">{user.name}</p>

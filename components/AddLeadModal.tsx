@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import type { Lead, User } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Lead, User, Tag } from '../types.ts';
+import { TagFilter } from './TagFilter.tsx';
 
 interface AddLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (lead: Omit<Lead, 'id' | 'stage'> | Lead) => void;
-  sdrs: User[];
+  onSave: (lead: Omit<Lead, 'id' | 'stage'> | Lead) => Promise<void>;
+  allUsers: User[];
+  tags: Tag[];
   lead: Lead | null;
   distributionMode: 'manual' | 'automatic';
+  isProcessing: boolean;
 }
 
-export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onSave, sdrs, lead, distributionMode }) => {
+export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onSave, allUsers, tags: allTags, lead, distributionMode, isProcessing }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -19,9 +22,19 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
   const [responsibleId, setResponsibleId] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [origin, setOrigin] = useState('Indicação Parceiro');
+  const [originPartnerId, setOriginPartnerId] = useState<string | undefined>(undefined);
   const [description, setDescription] = useState('');
 
   const isEditing = !!lead;
+
+  const { sdrs, partners } = useMemo(() => {
+    const sdrs = allUsers.filter(u => u.role === 'SDR');
+    const partners = allUsers.filter(u => u.role === 'Parceiro Indicador');
+    return { sdrs, partners };
+  }, [allUsers]);
+
+  const leadTags = useMemo(() => allTags.filter(t => t.category === 'potencial' || t.category === 'area_atuacao'), [allTags]);
+
 
   useEffect(() => {
     if (isOpen && lead) {
@@ -33,6 +46,7 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
       setResponsibleId(lead.responsibleId);
       setTags(lead.tags);
       setOrigin(lead.origin);
+      setOriginPartnerId(lead.originPartnerId);
       setDescription(lead.description);
     } else {
       // Reset form for new lead
@@ -44,11 +58,12 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
       setResponsibleId(null);
       setTags([]);
       setOrigin('Indicação Parceiro');
+      setOriginPartnerId(undefined);
       setDescription('');
     }
   }, [isOpen, lead]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const leadData = {
       name,
@@ -58,14 +73,15 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
       value: parseFloat(value) || 0,
       responsibleId,
       origin,
+      originPartnerId: origin === 'Indicação Parceiro' ? originPartnerId : undefined,
       description,
       tags,
     };
     
     if (isEditing && lead) {
-        onSave({ ...lead, ...leadData });
+        await onSave({ ...lead, ...leadData });
     } else {
-        onSave(leadData);
+        await onSave(leadData);
     }
     
     onClose();
@@ -73,7 +89,7 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
 
   if (!isOpen) return null;
 
-  const isSdrSelectDisabled = distributionMode === 'automatic' || isEditing;
+  const isSdrSelectDisabled = distributionMode === 'automatic' && !isEditing;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
@@ -119,6 +135,15 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
                 </select>
               </div>
             </div>
+            {origin === 'Indicação Parceiro' && (
+                 <div>
+                    <label htmlFor="partner" className="block text-sm font-medium text-slate-300">Parceiro Indicador</label>
+                    <select id="partner" value={originPartnerId || ''} onChange={e => setOriginPartnerId(e.target.value || undefined)} className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <option value="">Selecione um parceiro</option>
+                        {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                </div>
+            )}
              <div>
                 <label htmlFor="responsible" className="block text-sm font-medium text-slate-300">Atribuir a SDR</label>
                 <select id="responsible" value={responsibleId || ''} onChange={e => setResponsibleId(e.target.value || null)} disabled={isSdrSelectDisabled} className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm disabled:bg-slate-600/50 disabled:cursor-not-allowed">
@@ -132,14 +157,22 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onS
                     <p className="text-xs text-slate-400 mt-1">A atribuição não pode ser alterada aqui.</p>
                 )}
               </div>
+               <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Tags</label>
+                <TagFilter 
+                    selectedTags={tags} 
+                    onTagFilterChange={setTags} 
+                    allTags={leadTags}
+                />
+              </div>
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-slate-300">Descrição do Caso</label>
-                <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+                <label htmlFor="description" className="block text-sm font-medium text-slate-300">Descrição Detalhada do Caso</label>
+                <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={5} className="mt-1 w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>
           </div>
           <div className="mt-8 flex justify-end space-x-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">Cancelar</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors">Salvar</button>
+            <button type="button" onClick={onClose} disabled={isProcessing} className="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50">Cancelar</button>
+            <button type="submit" disabled={isProcessing} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">{isProcessing ? 'Salvando...' : 'Salvar'}</button>
           </div>
         </form>
       </div>

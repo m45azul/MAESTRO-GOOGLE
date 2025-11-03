@@ -1,4 +1,4 @@
-export interface Task {
+export type Task = {
   id: string;
   title: string;
   type: 'Approval' | 'Critical Deadline' | 'Follow-up';
@@ -20,7 +20,7 @@ export type UserRole =
   | 'Parceiro SDR'
   | 'Parceiro Outros';
 
-export interface User {
+export type User = {
   id: string;
   name: string;
   email: string;
@@ -34,7 +34,7 @@ export interface User {
   valorHora?: number;
 }
 
-export interface LawyerPerformance {
+export type LawyerPerformance = {
   id: string;
   name: string;
   avatarUrl: string;
@@ -44,7 +44,7 @@ export interface LawyerPerformance {
 
 export type PipelineStage = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Negociação' | 'Ganho' | 'Perdido';
 
-export interface Lead {
+export type Lead = {
   id: string;
   name: string;
   email: string;
@@ -54,12 +54,13 @@ export interface Lead {
   stage: PipelineStage;
   responsibleId: string | null;
   origin: string;
+  originPartnerId?: string;
   description: string;
   tags: string[];
   isDeleted?: boolean;
 }
 
-export interface Appointment {
+export type Appointment = {
   id: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
@@ -67,16 +68,17 @@ export interface Appointment {
   type: 'Reunião' | 'Audiência' | 'Prazo Processual' | 'Follow-up';
   participantIds: string[];
   description?: string;
+  caseId?: string;
 }
 
-export interface CaseUpdate {
+export type CaseUpdate = {
   id: string;
   date: string; // YYYY-MM-DD
   author: string;
   description: string;
 }
 
-export interface TimeLog {
+export type TimeLog = {
   id: string;
   date: string;
   hours: number;
@@ -85,7 +87,18 @@ export interface TimeLog {
   status: 'Pendente' | 'Aprovado' | 'Rejeitado';
 }
 
-export interface LegalCase {
+export type Document = {
+  id: string;
+  name: string;
+  url: string;
+  uploadDate: string;
+  version: number;
+  extractedText?: string;
+  // FIX: Added analysisStatus to track the state of AI document analysis.
+  analysisStatus?: 'pending' | 'completed' | 'failed';
+}
+
+export type LegalCase = {
   id: string;
   processNumber: string;
   internalNumber?: string;
@@ -104,12 +117,15 @@ export interface LegalCase {
   honorariosPrevistos: number;
   percentualAdvogado: number;
   isDeleted?: boolean;
+  documents: Document[];
+  tribunal: string;
+  complexidade: 'Simples' | 'Médio' | 'Complexo' | 'Muito Complexo';
 }
 
 export type TransactionType = 'Receita' | 'Despesa';
 export type TransactionStatus = 'Previsto' | 'Realizado' | 'Cancelado';
 
-export interface Transaction {
+export type Transaction = {
   id: string;
   date: string; // YYYY-MM-DD
   description: string;
@@ -122,14 +138,19 @@ export interface Transaction {
   isDeleted?: boolean;
 }
 
-export interface Tag {
+export type TagCategory = 'area_atuacao' | 'tipo_lead' | 'tipo_cliente' | 'tipo_processo' | 'complexidade' | 'prioridade' | 'jurisdicao' | 'competencia' | 'status' | 'origem' | 'segmento' | 'fase_processo' | 'instancia' | 'natureza' | 'localizacao' | 'tribunal' | 'habilidade' | 'nivel' | 'urgencia' | 'impacto' | 'canal' | 'potencial' | 'relacionamento';
+
+export type Tag = {
   id: string;
   name: string;
   color: string;
-  category: string;
+  category: TagCategory;
+  description?: string;
+  icon?: string;
+  isActive: boolean;
 }
 
-export interface CarteiraProcesso {
+export type CarteiraProcesso = {
     id: string;
     title: string;
     honorariosPrevistos: number;
@@ -137,7 +158,7 @@ export interface CarteiraProcesso {
     valorCarteira: number;
 }
 
-export interface Carteira {
+export type Carteira = {
     salarioFixo: number;
     ajudaCusto: number;
     totalFixo: number;
@@ -146,7 +167,14 @@ export interface Carteira {
     totalGeral: number;
 }
 
-export interface Client {
+export type Note = {
+  id: string;
+  authorId: string;
+  content: string;
+  timestamp: string; // ISO string
+}
+
+export type Client = {
   id: string;
   name: string;
   type: 'Pessoa Física' | 'Pessoa Jurídica';
@@ -155,10 +183,11 @@ export interface Client {
   phone: string;
   conversionDate: string;
   originLeadId: string;
+  notes?: Note[];
   isDeleted?: boolean;
 }
 
-export interface Contract {
+export type Contract = {
     id: string;
     clientId: string;
     type: 'Fixo' | 'Percentual' | 'Êxito' | 'Híbrido';
@@ -167,7 +196,7 @@ export interface Contract {
     startDate: string;
 }
 
-export interface PredictiveAnalysis {
+export type PredictiveAnalysis = {
   probabilidadeExito: number;
   tempoEstimado: number; // in months
   valorCondenacao: number;
@@ -176,7 +205,7 @@ export interface PredictiveAnalysis {
 export type WorkflowNodeType = 'trigger' | 'action' | 'condition';
 export type WorkflowModule = 'CRM' | 'Jurídico' | 'Financeiro' | 'Atendimento' | 'Agenda' | 'Sistema';
 
-export interface WorkflowNode {
+export type WorkflowNode = {
   id: string;
   type: WorkflowNodeType;
   title: string;
@@ -190,21 +219,21 @@ export interface WorkflowNode {
   };
 }
 
-export interface Workflow {
+export type Workflow = {
   id: string;
   name: string;
   description: string;
   nodes: WorkflowNode[];
 }
 
-export interface Comment {
+export type Comment = {
     id: string;
     authorId: string;
     content: string;
     timestamp: string;
 }
 
-export interface MuralPost {
+export type MuralPost = {
     id: string;
     authorId: string;
     content: string;
@@ -213,14 +242,14 @@ export interface MuralPost {
     comments: Comment[];
 }
 
-export interface ChatConversation {
+export type ChatConversation = {
     id: string;
     name: string;
     unread: number;
     type: 'user' | 'group';
 }
 
-export interface Meta {
+export type Meta = {
     id: string;
     title: string;
     type: 'Quantitativa' | 'Financeira' | 'Qualitativa';
@@ -230,17 +259,106 @@ export interface Meta {
     assigneeId: string; // user or team ID
 }
 
-export interface BotChatMessage {
+export type RankingItem = {
+  userId: string;
+  name: string;
+  metric: string;
+  value: number;
+  rank: number;
+}
+
+
+export type BotChatMessage = {
     id: string;
     text: string;
     sender: 'user' | 'bot';
 }
 
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
   fromId: string;
   toId: string; // Can be a userId or a groupId
   content: string;
   timestamp: string;
   read: boolean;
+}
+
+// --- Bank Reconciliation Types ---
+
+export type BankStatementItem = {
+  id: string;
+  date: string; // '2025-10-15'
+  description: string; // 'PIX RECEBIDO - MARIA SANTOS'
+  value: number; // 15000.00
+  type: 'credit' | 'debit';
+}
+
+export type AIReconciliationSuggestion = {
+  transactionId: string;
+  confidenceScore: number;
+  reason: string;
+}
+
+export type AIReconciliationResult = {
+  summary: {
+    totalLines: number;
+    automaticMatches: number;
+    suggestions: number;
+    unmatched: number;
+    autoMatchPercentage: number;
+  };
+  automaticMatches: Array<{
+    statementItem: BankStatementItem;
+    transaction: Transaction;
+  }>;
+  suggestions: Array<{
+    statementItem: BankStatementItem;
+    // FIX: Updated type to reflect the hydrated data structure which includes the full transaction object.
+    suggestedTransactions: (AIReconciliationSuggestion & { transaction: Transaction })[];
+  }>;
+  unmatchedItems: Array<{
+    statementItem: BankStatementItem;
+    reason: string;
+  }>;
+}
+
+// Atendimento Module Types
+export type SupportMessage = {
+  id: string;
+  conversationId: string;
+  sender: 'client' | 'agent' | 'bot';
+  agentId?: string; // if sender is 'agent'
+  content: string;
+  timestamp: string;
+}
+
+export type SupportConversation = {
+  id: string;
+  clientName: string;
+  clientContact: string; // phone number for whatsapp
+  channel: 'WhatsApp' | 'Email' | 'Site Chat';
+  status: 'open' | 'pending' | 'closed';
+  lastMessage: string;
+  unreadCount: number;
+  assignedAgentId?: string;
+}
+
+// Main App Data Structure
+export interface AppData {
+    leads: Lead[];
+    cases: LegalCase[];
+    clients: Client[];
+    contracts: Contract[];
+    transactions: Transaction[];
+    appointments: Appointment[];
+    tasks: Task[];
+    muralPosts: MuralPost[];
+    chatConversations: ChatConversation[];
+    chatMessages: ChatMessage[];
+    users: User[];
+    tags: Tag[];
+    supportConversations: SupportConversation[];
+    supportMessages: SupportMessage[];
+    metas: Meta[];
+    ranking: RankingItem[];
 }

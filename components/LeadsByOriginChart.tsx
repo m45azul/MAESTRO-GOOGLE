@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Card } from './Card';
+import { Card } from './Card.tsx';
 
 const data = [
   { name: 'Indicação Parceiro', value: 400 },

@@ -1,12 +1,14 @@
+
+
 import React, { useState, useMemo } from 'react';
-import { User } from '../types';
-import { EditIcon, UserCheckIcon, UserXIcon } from './icons';
-import { useAuth } from '../context/AuthContext';
+import { User } from '../types.ts';
+import { EditIcon, UserCheckIcon, UserXIcon } from './icons.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface UserTableProps {
     users: User[];
     onEdit: (user: User) => void;
-    onToggleStatus: (userId: string) => void;
+    onToggleStatus: (userId: string) => Promise<void>;
 }
 
 type SortKey = 'name' | 'email' | 'role' | 'status';
@@ -93,9 +95,9 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleSta
                                         <>
                                             <button onClick={() => onEdit(user)} className="text-slate-400 hover:text-indigo-400" title="Editar"><EditIcon className="w-4 h-4"/></button>
                                             {user.status === 'Ativo' ? (
-                                                <button onClick={() => onToggleStatus(user.id)} className="text-slate-400 hover:text-red-400" title="Desativar"><UserXIcon className="w-4 h-4"/></button>
+                                                <button onClick={async () => await onToggleStatus(user.id)} className="text-slate-400 hover:text-red-400" title="Desativar"><UserXIcon className="w-4 h-4"/></button>
                                             ) : (
-                                                <button onClick={() => onToggleStatus(user.id)} className="text-slate-400 hover:text-green-400" title="Reativar"><UserCheckIcon className="w-4 h-4"/></button>
+                                                <button onClick={async () => await onToggleStatus(user.id)} className="text-slate-400 hover:text-green-400" title="Reativar"><UserCheckIcon className="w-4 h-4"/></button>
                                             )}
                                         </>
                                     )}

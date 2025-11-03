@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Client } from '../types';
+import { Client } from '../types.ts';
 
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (client: Client) => void;
+  onSave: (client: Client) => Promise<void>;
   client: Client;
 }
 
@@ -25,9 +25,9 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({ isOpen, onClose,
     }
   }, [client]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    await onSave({
       ...client,
       name,
       email,

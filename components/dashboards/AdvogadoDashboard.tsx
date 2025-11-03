@@ -1,19 +1,21 @@
 
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { Card } from '../Card';
 import { KpiCard } from '../KpiCard';
 import { TaskList } from '../TaskList';
-import { mockCases } from '../../data/cases';
-import { clientMap } from '../../data/clients';
-import type { User, Task } from '../../types';
+import { User, Task, LegalCase, Client } from '../../types.ts';
 
 interface AdvogadoDashboardProps {
     user: User;
     tasks: Task[];
+    cases: LegalCase[];
+    clients: Client[];
 }
 
-export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user, tasks }) => {
-    const myCases = mockCases.filter(c => c.responsibleId === user.id && c.status === 'Ativo');
+export const AdvogadoDashboard: React.FC<AdvogadoDashboardProps> = ({ user, tasks, cases, clients }) => {
+    const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c])), [clients]);
+    const myCases = useMemo(() => cases.filter(c => c.responsibleId === user.id && c.status === 'Ativo' && !c.isDeleted), [cases, user.id]);
     const totalValue = myCases.reduce((sum, c) => sum + c.valorCausa, 0);
 
     return (

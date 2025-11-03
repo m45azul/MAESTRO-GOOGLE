@@ -1,8 +1,10 @@
-import React from 'react';
+
+
+import React, { useMemo } from 'react';
 import { NetMarginChart } from '../NetMarginChart';
 import { KpiCard } from '../KpiCard';
 import { Card } from '../Card';
-import { mockUsers } from '../../data/users';
+import { User } from '../../types.ts';
 
 const getSuccessRateColor = (rate: number) => {
     if (rate >= 90) return 'text-green-400';
@@ -10,15 +12,15 @@ const getSuccessRateColor = (rate: number) => {
     return 'text-red-400';
 };
 
-const TeamPerformance: React.FC = () => {
-    const teamData = mockUsers
+const TeamPerformance: React.FC<{users: User[]}> = ({ users }) => {
+    const teamData = useMemo(() => users
       .filter(u => u.role === 'Advogado Interno')
       .map(u => ({
           ...u,
           casesCompleted: Math.floor(Math.random() * 25) + 5,
           successRate: Math.floor(Math.random() * 20) + 80,
       }))
-      .sort((a,b) => b.casesCompleted - a.casesCompleted);
+      .sort((a,b) => b.casesCompleted - a.casesCompleted), [users]);
 
     return (
         <Card className="h-full">
@@ -46,7 +48,11 @@ const TeamPerformance: React.FC = () => {
     );
 };
 
-export const ControllerDashboard: React.FC = () => {
+interface ControllerDashboardProps {
+    users: User[];
+}
+
+export const ControllerDashboard: React.FC<ControllerDashboardProps> = ({ users }) => {
     return (
         <div className="space-y-6 md:space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -58,7 +64,7 @@ export const ControllerDashboard: React.FC = () => {
                 <div className="lg:col-span-2">
                     <NetMarginChart />
                 </div>
-                <TeamPerformance />
+                <TeamPerformance users={users} />
             </div>
         </div>
     );

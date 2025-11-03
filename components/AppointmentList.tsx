@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import type { Appointment } from '../types';
-import { Card } from './Card';
-import { MeetingIcon, HearingIcon, DeadlineIcon, FollowUpIcon, MoreVerticalIcon, EditIcon, TrashIcon } from './icons';
-import { userMap } from '../data/users';
+
+
+import React, { useState, useMemo } from 'react';
+import { Appointment, LegalCase } from '../types.ts';
+import { Card } from './Card.tsx';
+import { MeetingIcon, HearingIcon, DeadlineIcon, FollowUpIcon, MoreVerticalIcon, EditIcon, TrashIcon } from './icons.tsx';
+import { userMap } from '../data/allData.ts';
 
 interface AppointmentListProps {
   selectedDate: Date;
   appointments: Appointment[];
+  cases: LegalCase[];
   onEdit: (appointment: Appointment) => void;
-  onDelete: (appointmentId: string) => void;
+  onDelete: (appointmentId: string) => Promise<void>;
 }
 
 const AppointmentTypeIcon: React.FC<{ type: Appointment['type'] }> = ({ type }) => {
@@ -27,7 +30,7 @@ const AppointmentTypeIcon: React.FC<{ type: Appointment['type'] }> = ({ type }) 
   }
 };
 
-const AppointmentItem: React.FC<{ appointment: Appointment, onEdit: (appointment: Appointment) => void, onDelete: (id: string) => void }> = ({ appointment, onEdit, onDelete }) => {
+const AppointmentItem: React.FC<{ appointment: Appointment, caseItem?: LegalCase, onEdit: (appointment: Appointment) => void, onDelete: (id: string) => Promise<void> }> = ({ appointment, caseItem, onEdit, onDelete }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const participants = appointment.participantIds.map(id => userMap.get(id)).filter(Boolean);
 
@@ -39,6 +42,11 @@ const AppointmentItem: React.FC<{ appointment: Appointment, onEdit: (appointment
                 <p className="font-medium text-slate-200 pr-6">{appointment.title}</p>
                 <p className="text-sm text-slate-400">{appointment.time} - {appointment.type}</p>
                 {appointment.description && <p className="text-xs text-slate-500 mt-1">{appointment.description}</p>}
+                {caseItem && (
+                    <p className="text-xs text-indigo-400 mt-1 truncate" title={`Processo: ${caseItem.title}`}>
+                        Processo: {caseItem.title}
+                    </p>
+                )}
                 {participants.length > 0 && (
                     <div className="flex items-center space-x-1 mt-2">
                         {participants.map(p => p && <img key={p.id} src={p.avatarUrl} alt={p.name} title={p.name} className="w-5 h-5 rounded-full" />)}
@@ -53,7 +61,7 @@ const AppointmentItem: React.FC<{ appointment: Appointment, onEdit: (appointment
                 {isMenuOpen && (
                     <div onMouseDown={e => e.stopPropagation()} className="absolute top-full right-0 mt-1 bg-slate-900 border border-slate-700 rounded-md shadow-lg z-10 w-28">
                         <button onClick={() => { onEdit(appointment); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 rounded-t-md"><EditIcon className="w-3 h-3 mr-2" /> Editar</button>
-                        <button onClick={() => { onDelete(appointment.id); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700 rounded-b-md"><TrashIcon className="w-3 h-3 mr-2" /> Excluir</button>
+                        <button onClick={async () => { await onDelete(appointment.id); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700 rounded-b-md"><TrashIcon className="w-3 h-3 mr-2" /> Excluir</button>
                     </div>
                 )}
             </div>
@@ -62,7 +70,9 @@ const AppointmentItem: React.FC<{ appointment: Appointment, onEdit: (appointment
 }
 
 
-export const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate, appointments, onEdit, onDelete }) => {
+export const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate, appointments, cases, onEdit, onDelete }) => {
+  const caseMap = useMemo(() => new Map(cases.map(c => [c.id, c])), [cases]);
+  
   return (
     <Card className="h-full">
       <h3 className="text-lg font-semibold text-white mb-4">
@@ -70,9 +80,12 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate, 
       </h3>
       <div className="space-y-3 overflow-y-auto h-[calc(100%-40px)] pr-2">
         {appointments.length > 0 ? (
-          appointments.map(app => (
-            <AppointmentItem key={app.id} appointment={app} onEdit={onEdit} onDelete={onDelete} />
-          ))
+          appointments.map(app => {
+            const caseItem = app.caseId ? caseMap.get(app.caseId) : undefined;
+            return (
+              <AppointmentItem key={app.id} appointment={app} caseItem={caseItem} onEdit={onEdit} onDelete={onDelete} />
+            )
+          })
         ) : (
           <div className="flex items-center justify-center h-full text-slate-500">
             <p>Nenhum compromisso para este dia.</p>
